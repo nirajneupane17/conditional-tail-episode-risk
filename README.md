@@ -2,58 +2,326 @@
 
 ## A Path-Dependent Framework for Extreme-Loss Episodes Beyond Value-at-Risk and Expected Shortfall
 
-**Author:** Niraj Neupane  
-**Status:** Working Paper / Research Repository  
-**Version:** v0.1.0  
-**Date:** September 2026  
-**Research Area:** Quantitative Finance · Financial Risk Management · Financial Econometrics · Extreme Value Theory · Machine Learning · Market Risk
+<p align="center">
+
+**Niraj Neupane**  
+*Quantitative Finance · Financial Econometrics · Financial Risk Management · AI/ML*
+
+</p>
+
+<p align="center">
+
+[![Status](https://img.shields.io/badge/Status-Working%20Paper-orange)](#research-status)
+[![Research](https://img.shields.io/badge/Research-Quantitative%20Finance-1f6feb)](#research-overview)
+[![Risk](https://img.shields.io/badge/Domain-Tail%20Risk-6f42c1)](#risk-measures)
+[![Methodology](https://img.shields.io/badge/Methodology-Extreme%20Value%20Theory-8b5cf6)](#methodology)
+[![Code](https://img.shields.io/badge/Code-Python-3776ab)](#reproducibility)
+[![License](https://img.shields.io/badge/Code-MIT-green)](#license)
+
+</p>
 
 ---
 
-## Abstract
+## Research at a Glance
 
-Value-at-Risk (VaR) and Expected Shortfall (ES) are central tools for measuring financial tail risk, but both are fundamentally marginal tail measures. They characterize the severity of losses relative to a distributional threshold without explicitly representing how extreme losses evolve across a forecast horizon.
+> **Extreme losses are not only about how large losses become. They are also about how extreme losses organize themselves through time.**
 
-This repository develops **Tail Episode Risk (TER)** and **Conditional Tail Episode Risk (CTER)** as a path-dependent framework for analyzing extreme-loss episodes.
+Value-at-Risk (VaR) and Expected Shortfall (ES) are fundamental tools for measuring financial tail risk. However, they primarily characterize the **marginal distribution of losses**.
 
-Rather than evaluating extreme losses one observation at a time, the framework considers a future loss path
+This research develops **Tail Episode Risk (TER)** and **Conditional Tail Episode Risk (CTER)** as a complementary framework for studying the **temporal structure and cumulative severity of extreme-loss episodes** over a future forecast horizon.
 
-\[
+Instead of asking only:
+
+> *How large can an individual tail loss be?*
+
+the framework asks:
+
+> *What happens when extreme losses persist and form an episode?*
+
+The research does **not** position CTER as a replacement for VaR or ES. It investigates whether episode-based information represents a distinct and economically meaningful dimension of tail risk.
+
+---
+
+## Table of Contents
+
+- [Research Overview](#research-overview)
+- [The Problem](#the-problem)
+- [Core Idea](#core-idea)
+- [Tail Episode Risk (TER)](#tail-episode-risk-ter)
+- [Conditional Tail Episode Risk (CTER)](#conditional-tail-episode-risk-cter)
+- [VaR vs ES vs TER vs CTER](#var-vs-es-vs-ter-vs-cter)
+- [Simple Example](#simple-example)
+- [Research Contributions](#research-contributions)
+- [Theoretical Properties](#theoretical-properties)
+- [Methodology](#methodology)
+- [Monte Carlo Experiments](#monte-carlo-experiments)
+- [Adversarial Stress Tests](#adversarial-stress-tests)
+- [Empirical Study](#empirical-study)
+- [Backtesting Framework](#backtesting-framework)
+- [Empirical Findings](#empirical-findings)
+- [Incremental Information](#incremental-information)
+- [Estimator Sensitivity](#estimator-sensitivity)
+- [EVT/GPD Estimation Experiment](#evtgpd-estimation-experiment)
+- [Relationship to Existing Literature](#relationship-to-existing-literature)
+- [Novelty Position](#novelty-position)
+- [Model Risk and Governance](#model-risk-and-governance)
+- [Limitations](#limitations)
+- [Future Research](#future-research)
+- [Repository Structure](#repository-structure)
+- [Reproducibility](#reproducibility)
+- [Data](#data)
+- [Research Workflow](#research-workflow)
+- [Research Integrity](#research-integrity)
+- [Why This Repository Matters](#why-this-repository-matters)
+- [Citation](#citation)
+- [Research Status](#research-status)
+- [Disclaimer](#disclaimer)
+- [License](#license)
+- [Author](#author)
+- [The Core Idea](#the-core-idea)
+
+---
+
+# Research Overview
+
+### Research Question
+
+> **Can path-dependent information about extreme-loss episodes provide a distinct and economically meaningful dimension of tail risk beyond marginal VaR and Expected Shortfall?**
+
+The research investigates this question through:
+
+- mathematical formulation;
+- theoretical analysis;
+- Monte Carlo simulation;
+- dependence experiments;
+- adversarial stress testing;
+- rolling out-of-sample forecasting;
+- conventional VaR/ES benchmarks;
+- multi-asset empirical evaluation;
+- statistical inference;
+- EVT/GPD estimation;
+- robustness and sensitivity analysis.
+
+---
+
+# The Problem
+
+Financial tail risk is often summarized using marginal measures.
+
+### Value-at-Risk
+
+VaR answers:
+
+> **What loss threshold is exceeded with a specified probability?**
+
+### Expected Shortfall
+
+ES answers:
+
+> **How severe is the loss beyond that threshold on average?**
+
+These measures are essential, but they do not explicitly describe how extreme observations are **organized across time**.
+
+Consider:
+
+```text
+Path A
+
+4   0   4   0   4   0
+↑       ↑       ↑
+│       │       │
+isolated exceedances
+```
+
+versus:
+
+```text
+Path B
+
+4   4   4   0   0   0
+↑───────────↑
+persistent episode
+```
+
+The two paths contain the same individual extreme observations, but their temporal structures are different.
+
+Path B contains a concentrated episode of extreme losses, while Path A contains isolated exceedances.
+
+This motivates a path-dependent risk functional.
+
+---
+
+# Core Idea
+
+The CTER framework has four conceptual stages:
+
+```text
+                 FUTURE LOSS PATH
+                        │
+                        ▼
+                ┌───────────────┐
+                │ Tail Threshold│
+                │    q(t, α)    │
+                └───────┬───────┘
+                        │
+                        ▼
+              Identify Exceedances
+                        │
+                        ▼
+             Form Contiguous Episodes
+                        │
+                        ▼
+              Measure Episode Severity
+                        │
+                        ▼
+               Select Worst Episode
+                        │
+                        ▼
+              ┌──────────────────┐
+              │ TER / CTER       │
+              │ Path-Dependent   │
+              │ Tail Risk        │
+              └──────────────────┘
+```
+
+The framework therefore moves from:
+
+**individual observations**
+
+to
+
+**episodes**
+
+to
+
+**cumulative episode severity**
+
+to
+
+**tail risk of the worst episode**.
+
+---
+
+# Tail Episode Risk (TER)
+
+## 1. Future Loss Path
+
+For a forecast origin `t` and forecast horizon `H`, define the future loss path as:
+
+$$
 \mathbf{L}_{t,H}
 =
 (L_{t+1},L_{t+2},\ldots,L_{t+H})
-\]
+$$
 
-and identifies contiguous periods in which losses exceed a specified tail threshold. The severity of each episode is measured by the cumulative threshold-exceedance loss:
+Let:
 
-\[
+$$
+q_{t,\alpha}
+$$
+
+denote the tail-loss threshold at confidence level `α`.
+
+---
+
+## 2. Threshold Exceedance
+
+For each future observation, define the positive threshold exceedance:
+
+$$
+(L_{t+k}-q_{t,\alpha})_+
+=
+\max(L_{t+k}-q_{t,\alpha},0)
+$$
+
+Only losses above the threshold contribute to episode severity.
+
+---
+
+## 3. Extreme-Loss Episodes
+
+Let:
+
+$$
+\mathcal{E}_{t,H}
+$$
+
+denote the set of contiguous threshold-exceedance episodes within the forecast horizon.
+
+For episode `j`, define cumulative severity as:
+
+$$
 S_j
 =
 \sum_{k\in j}
-(L_{t+k}-q_{t,\alpha})_+.
-\]
+(L_{t+k}-q_{t,\alpha})_+
+$$
 
-The worst episode over the forecast horizon is then
+Thus, `S_j` measures the cumulative amount by which losses exceed the tail threshold during episode `j`.
 
-\[
+---
+
+## 4. Worst Episode
+
+The worst episode within the forecast horizon is:
+
+$$
 S^*_{t,H}
 =
-\max_{j\in\mathcal{E}_{t,H}} S_j,
-\]
+\max_{j\in\mathcal{E}_{t,H}}S_j
+$$
 
-where \(\mathcal{E}_{t,H}\) denotes the set of contiguous exceedance episodes.
+If no threshold exceedance occurs, the episode burden is zero.
 
-The proposed **Tail Episode Risk** measure is the upper-tail quantile of this worst-episode severity:
+---
 
-\[
+## 5. Tail Episode Risk
+
+TER is defined as the upper-tail quantile of the worst episode severity:
+
+$$
 TER_{\alpha,\beta,H}
 =
-Q_\beta(S^*_{t,H}).
-\]
+Q_\beta(S^*_{t,H})
+$$
 
-The conditional formulation is
+where:
 
-\[
+- `α` = tail threshold level;
+- `β` = upper-tail probability applied to episode severity;
+- `H` = forecast horizon;
+- `S*` = worst cumulative threshold-exceedance episode.
+
+### Interpretation
+
+TER answers:
+
+> **How severe can the worst cumulative extreme-loss episode become over the forecast horizon?**
+
+---
+
+# Conditional Tail Episode Risk (CTER)
+
+TER describes the distribution of the worst episode.
+
+CTER adds a conditional decomposition.
+
+Define the episode-occurrence indicator:
+
+$$
+E_{t,H}
+=
+\mathbf{1}
+\left[
+\max_{1\leq k\leq H}L_{t+k}
+>
+q_{t,\alpha}
+\right]
+$$
+
+The proposed conditional formulation is:
+
+$$
 CTER_{\alpha,\beta,H,t}
 =
 P(E_{t,H}=1\mid X_t)
@@ -63,623 +331,281 @@ ES_\beta
 S^*_{t,H}
 \mid
 E_{t,H}=1,X_t,Z_t
-\right],
-\]
+\right]
+$$
 
-where \(E_{t,H}\) indicates whether at least one threshold exceedance occurs during the forecast horizon, \(X_t\) represents information available at the forecast origin, and \(Z_t\) represents episode-related state information such as persistence, duration, escalation, and clustering.
+where:
 
-The objective is **not** to replace VaR or ES. Instead, CTER is designed to measure a different risk dimension: the potential severity of a concentrated extreme-loss episode over a future horizon.
+- `X(t)` = information available at the forecast origin;
+- `Z(t)` = episode-related state information;
+- `E(t,H)` = indicator that an extreme-loss episode occurs;
+- `ES(β)` = conditional expected shortfall of episode severity.
+
+Conceptually:
+
+```text
+                         CTER
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+             ▼                           ▼
+     Episode Probability          Episode Severity
+             │                           │
+             ▼                           ▼
+     P(E = 1 | X)                ESβ(S* | E=1,X,Z)
+             │                           │
+             └─────────────┬─────────────┘
+                           │
+                           ▼
+                          CTER
+```
+
+This decomposition separates two distinct questions:
+
+### Question 1
+
+> **How likely is an extreme-loss episode?**
+
+### Question 2
+
+> **If the episode occurs, how severe could it become?**
 
 ---
 
-# 1. Research Motivation
+# VaR vs ES vs TER vs CTER
 
-Financial risk can be path-dependent.
+| Measure | Primary object | Perspective | Path-dependent? |
+|---|---|---|---|
+| **VaR** | Tail-loss threshold | Marginal | No |
+| **ES** | Average severity beyond threshold | Marginal | No |
+| **TER** | Upper tail of worst cumulative exceedance episode | Path-dependent | Yes |
+| **CTER** | Episode probability × conditional episode severity | Conditional | Yes |
 
-Two portfolios can have similar marginal loss distributions and therefore similar VaR and ES while exhibiting very different temporal structures.
+The objective is **not** to replace VaR or ES.
 
-Consider two six-period loss paths:
+Instead, the framework investigates whether CTER captures an additional dimension of risk associated with the **temporal organization of extreme losses**.
 
-\[
-A=(4,0,4,0,4,0)
-\]
+---
+
+# Simple Example
+
+Consider:
+
+```text
+Path A = (4, 0, 4, 0, 4, 0)
+
+Path B = (4, 4, 4, 0, 0, 0)
+```
+
+with:
+
+```text
+q = 2
+```
+
+The individual exceedances are:
+
+```text
+2   0   2   0   2   0
+```
+
+for Path A, while Path B produces:
+
+```text
+2   2   2   0   0   0
+```
+
+For Path A, the exceedances are separated. Therefore:
+
+$$
+S_A^*=2
+$$
+
+For Path B, the three exceedances form one episode:
+
+$$
+S_B^*=6
+$$
+
+Therefore:
+
+$$
+S_A^*\neq S_B^*
+$$
+
+even though the two paths contain the same individual loss observations.
+
+This gives the core distinction:
+
+$$
+VaR_A = VaR_B
+$$
 
 and
 
-\[
-B=(4,4,4,0,0,0).
-\]
+$$
+ES_A = ES_B
+$$
 
-Suppose the tail threshold is
+while:
 
-\[
-q=2.
-\]
+$$
+TER_A \neq TER_B
+$$
 
-Both paths contain the same individual observations and therefore have the same marginal tail characteristics.
-
-However:
-
-- Path A contains three isolated exceedances.
-- Path B contains one persistent exceedance episode.
-- The cumulative severity of the largest episode is therefore different.
-
-For Path A:
-
-\[
-S^*_A=2.
-\]
-
-For Path B:
-
-\[
-S^*_B=6.
-\]
-
-Therefore,
-
-\[
-VaR_A=VaR_B,
-\]
-
-\[
-ES_A=ES_B,
-\]
-
-while
-
-\[
-TER_A\neq TER_B.
-\]
-
-This illustrates the central motivation of the framework:
-
-> **Marginal tail measures can be similar even when the temporal organization of extreme losses is materially different.**
-
-CTER attempts to capture this additional path-dependent dimension.
+The difference arises from **temporal organization**, not marginal observations.
 
 ---
 
-# 2. Research Question
+# Research Contributions
 
-The central research question is:
+The research investigates the following contributions.
 
-> **Can a path-dependent measure of cumulative extreme-loss episodes provide information about future tail-loss behavior that is not captured by marginal VaR and Expected Shortfall alone?**
+## 1. Path-Dependent Tail Functional
 
-The research investigates this question through:
+A formal framework based on the **worst cumulative threshold-exceedance episode** over a future horizon.
 
-1. Mathematical construction of TER and CTER.
-2. Theoretical analysis of their properties.
-3. Monte Carlo simulations under different dependence structures.
-4. Adversarial stress tests.
-5. Out-of-sample empirical evaluation.
-6. Comparison with conventional VaR and ES benchmarks.
-7. Incremental forecast evaluation.
-8. Estimation-layer sensitivity analysis.
-9. Robustness and model-risk analysis.
+## 2. Conditional Decomposition
 
----
+CTER separates:
 
-# 3. Main Contributions
+- probability of an extreme-loss episode;
+- conditional upper-tail severity of that episode.
 
-The repository develops and evaluates two related constructs.
+## 3. Temporal Clustering
 
-## 3.1 Tail Episode Risk (TER)
+The framework explicitly distinguishes:
 
-TER measures the upper-tail severity of the **worst cumulative threshold-exceedance episode** within a future horizon.
+- isolated extreme observations;
+- persistent extreme-loss episodes.
 
-\[
-TER_{\alpha,\beta,H}
-=
-Q_\beta(S^*_{t,H}).
-\]
+## 4. Simulation Evidence
 
-It is therefore a path-dependent functional rather than a purely marginal tail statistic.
+Monte Carlo experiments investigate how dependence affects episode risk.
 
----
+## 5. Adversarial Stress Testing
 
-## 3.2 Conditional Tail Episode Risk (CTER)
+The framework is tested under different stylized market-stress environments.
 
-CTER decomposes episode risk into two components:
+## 6. Out-of-Sample Evaluation
 
-1. The probability that an extreme-loss episode occurs.
-2. The conditional upper-tail severity of that episode.
+The empirical study uses rolling forecasts over an out-of-sample period.
 
-\[
-CTER_{\alpha,\beta,H,t}
-=
-P(E_{t,H}=1|X_t)
-\times
-ES_\beta
-[
-S^*_{t,H}
-|
-E_{t,H}=1,X_t,Z_t
-].
-\]
+## 7. Incremental Information Testing
 
-This decomposition separates:
+The research tests whether CTER provides additional information beyond conventional risk forecasts.
 
-### Episode occurrence
+## 8. Estimator Sensitivity
 
-\[
-P(E_{t,H}=1|X_t)
-\]
-
-from
-
-### Episode severity
-
-\[
-ES_\beta
-[
-S^*_{t,H}
-|
-E_{t,H}=1,X_t,Z_t
-].
-\]
-
-This allows the framework to distinguish between:
-
-- the likelihood of entering an extreme-loss episode, and
-- the potential severity of that episode once it occurs.
+Different estimation approaches are evaluated, including EVT/GPD-based experiments.
 
 ---
 
-# 4. TER Framework
+# Theoretical Properties
 
-## 4.1 Forecast Loss Path
+The research studies several properties of the proposed framework.
 
-For forecast origin \(t\) and horizon \(H\), define the future loss path:
+## Monotonicity
 
-\[
-\mathbf{L}_{t,H}
-=
-(L_{t+1},L_{t+2},...,L_{t+H}).
-\]
+Conditional on a common threshold construction, increasing the loss path cannot reduce the corresponding episode burden.
 
-Let
-
-\[
-q_{t,\alpha}
-\]
-
-represent the tail-loss threshold at confidence level \(\alpha\).
-
----
-
-## 4.2 Threshold Exceedance
-
-Define the positive threshold exceedance as:
-
-\[
-(L_{t+k}-q_{t,\alpha})_+
-=
-\max(L_{t+k}-q_{t,\alpha},0).
-\]
-
-An observation contributes to episode severity only when the loss exceeds the threshold.
-
----
-
-## 4.3 Exceedance Episodes
-
-Let
-
-\[
-\mathcal{E}_{t,H}
-\]
-
-represent the collection of contiguous exceedance episodes within the forecast path.
-
-For episode \(j\):
-
-\[
-S_j
-=
-\sum_{k\in j}
-(L_{t+k}-q_{t,\alpha})_+.
-\]
-
----
-
-## 4.4 Worst Episode
-
-Define:
-
-\[
-S^*_{t,H}
-=
-\max_{j\in\mathcal{E}_{t,H}} S_j.
-\]
-
-If no exceedance occurs, the episode burden is zero.
-
----
-
-## 4.5 Tail Episode Risk
-
-The TER measure is:
-
-\[
-TER_{\alpha,\beta,H}
-=
-Q_\beta(S^*_{t,H}).
-\]
-
-Here:
-
-- \(\alpha\) = threshold confidence level.
-- \(\beta\) = tail probability used for the episode-severity distribution.
-- \(H\) = forecast horizon.
-- \(S^*_{t,H}\) = worst cumulative threshold-exceedance episode.
-
----
-
-# 5. Conditional Tail Episode Risk
-
-The conditional formulation introduces an explicit episode-occurrence probability.
-
-Define:
-
-\[
-E_{t,H}
-=
-1
-\left[
-\max_{1\leq k\leq H}
-L_{t+k}
->
-q_{t,\alpha}
-\right].
-\]
-
-Then:
-
-\[
-CTER_{\alpha,\beta,H,t}
-=
-p_t
-\cdot
-ES_\beta(B_t|B_t>0,X_t,Z_t),
-\]
-
-where
-
-\[
-p_t
-=
-P(E_{t,H}=1|X_t)
-\]
-
-and \(B_t\) represents the relevant episode-burden variable.
-
-The implementation used in the final empirical specification is severity-centered.
-
-Episode-related information such as:
-
-- duration,
-- persistence,
-- escalation,
-- clustering,
-- market state,
-
-is treated as predictive state information rather than automatically multiplying the severity measure through mechanical penalty terms.
-
----
-
-# 6. Conceptual Relationship to VaR and ES
-
-The framework is intended to complement—not replace—standard tail-risk measures.
-
-| Measure | Primary object | Marginal / Path-dependent |
-|---|---|---|
-| VaR | Tail threshold | Marginal |
-| ES | Average tail severity | Marginal |
-| TER | Upper tail of worst cumulative threshold-exceedance episode | Path-dependent |
-| CTER | Episode probability × conditional tail episode severity | Path-dependent / Conditional |
-
-### VaR
-
-VaR answers:
-
-> How large is the loss threshold associated with a specified tail probability?
-
-### ES
-
-ES answers:
-
-> Conditional on being beyond the VaR threshold, how severe is the loss on average?
-
-### TER
-
-TER asks:
-
-> How severe can the worst cumulative threshold-exceedance episode become over a future horizon?
-
-### CTER
-
-CTER asks:
-
-> Given current information, what is the probability of entering an extreme-loss episode and how severe could that episode be in its upper tail?
-
-These are related but distinct questions.
-
----
-
-# 7. Theoretical Properties
-
-The framework studies several structural properties.
-
-## 7.1 Monotonicity
-
-Conditional on a common threshold construction, increasing the underlying loss path cannot reduce the corresponding episode burden.
-
----
-
-## 7.2 Positive Homogeneity
+## Positive Homogeneity
 
 Under consistent scaling of losses and thresholds:
 
-\[
-TER(cL)=c\,TER(L),
-\]
+$$
+TER(cL)=c\,TER(L)
+$$
 
-for \(c>0\).
+for:
 
-The corresponding scaling behavior applies to CTER under consistent transformation of the threshold and severity components.
+$$
+c>0
+$$
 
----
+## Translation Equivariance
 
-## 7.3 Translation Equivariance
+When losses and the threshold are translated consistently, the threshold-exceedance structure is preserved.
 
-When the threshold is translated consistently with the loss process, the exceedance structure is preserved.
+## Temporal Clustering Sensitivity
 
----
+TER and CTER respond to the temporal organization of extreme observations.
 
-## 7.4 Temporal Clustering Sensitivity
+This is the defining distinction from purely marginal tail measures.
 
-Unlike purely marginal measures, TER and CTER respond to the temporal arrangement of losses.
+## Distinction from VaR and ES
 
-This is a central feature of the framework.
+Constructed paths demonstrate that the same marginal observations can produce different episode-risk values.
 
----
+## Important Qualification
 
-## 7.5 Distinction from VaR and ES
+The current research does **not** claim that TER or CTER satisfy every property associated with coherent risk measures.
 
-The constructed-path example demonstrates that identical marginal observations can produce different TER values.
+In particular, subadditivity and full coherence require separate mathematical analysis because:
 
-Therefore, TER contains information about temporal organization that marginal VaR and ES do not directly encode.
-
----
-
-## 7.6 Distinction from Drawdown Measures
-
-Drawdown measures are based on cumulative declines from prior wealth peaks.
-
-TER instead operates directly on threshold exceedances of a loss process.
-
-The state variables and economic interpretation are therefore different.
+- the threshold is distribution-dependent;
+- episode construction is nonlinear;
+- the worst-episode operator is nonlinear.
 
 ---
 
-# 8. Important Scope of the Claims
+# Methodology
 
-The framework does **not** claim that:
+The research follows the following methodological sequence:
 
-- CTER universally outperforms VaR.
-- CTER universally outperforms ES.
-- CTER should replace regulatory VaR or ES.
-- TER is a universally superior risk measure.
-- The framework is the first path-dependent tail-risk measure.
-- All forms of temporal dependence are captured by the current implementation.
-- The empirical results establish universal forecasting superiority.
-
-The research instead evaluates whether the proposed functional captures an economically meaningful dimension of tail risk that conventional marginal measures do not explicitly represent.
-
----
-
-# 9. Novelty Position
-
-The literature contains established work on:
-
-- extreme-value theory,
-- clustered exceedances,
-- aggregate excess measures,
-- drawdown risk,
-- conditional tail risk,
-- dynamic VaR/ES,
-- path-dependent risk measures,
-- machine-learning-based tail-risk forecasting.
-
-In particular, aggregate excess severity has been studied in the extreme-event literature, and drawdown-based risk measures provide another important path-dependent framework.
-
-The proposed contribution should therefore not be interpreted as claiming that cumulative exceedances themselves are entirely new.
-
-The research contribution is instead centered on the specific financial-risk formulation:
-
-1. identifying contiguous threshold-exceedance episodes,
-2. aggregating threshold-exceedance severity within episodes,
-3. taking the worst episode over a forecast horizon,
-4. modeling the upper tail of that episode severity,
-5. and decomposing conditional episode risk into occurrence probability and conditional upper-tail severity.
-
-The current literature search did not identify an existing financial risk measure using the exact names **Tail Episode Risk (TER)** and **Conditional Tail Episode Risk (CTER)** with the proposed formulation.
-
-Accordingly, the appropriate novelty statement is:
-
-> **The proposed framework builds on established concepts from extreme-value theory, clustered exceedances, aggregate excess measures, drawdown risk, and conditional tail-risk modeling. The potential contribution lies in the specific integration and financial-risk formulation of these components, particularly the conditional probability × upper-tail severity construction applied to the maximum cumulative threshold-exceedance episode.**
+```text
+Historical Market Data
+        │
+        ▼
+Data Cleaning & Transformation
+        │
+        ▼
+Rolling Estimation Window
+        │
+        ├───────────────┐
+        ▼               ▼
+   VaR / ES          TER / CTER
+   Benchmarks         Framework
+        │               │
+        └───────┬───────┘
+                ▼
+        Out-of-Sample Forecasts
+                │
+                ▼
+       Backtesting & Evaluation
+                │
+        ┌───────┼────────┐
+        ▼       ▼        ▼
+      VaR      ES      CTER
+    Tests    Scores   Metrics
+        │       │        │
+        └───────┼────────┘
+                ▼
+       Statistical Inference
+                │
+                ▼
+        Research Conclusions
+```
 
 ---
 
-# 10. Research Design
+# Monte Carlo Experiments
 
-The empirical research follows a strict out-of-sample protocol.
+The simulation study examines the relationship between:
 
-## Assets
+- marginal tail behavior;
+- temporal dependence;
+- episode severity.
 
-The empirical study covers:
+Dependence levels include:
 
-- S&P 500
-- Nasdaq
-- U.S. Treasury ETF / TLT
-- EUR/USD
-- USD/JPY
-- Bitcoin
+$$
+\rho\in\{0.0,0.3,0.7,0.9\}
+$$
 
----
+under Gaussian and Student-t settings.
 
-## Out-of-Sample Period
-
-Primary evaluation period:
-
-**2020–2025**
-
----
-
-## Forecast Horizon
-
-The primary forecast horizon is:
-
-\[
-H=10
-\]
-
-trading days.
-
----
-
-## Tail Levels
-
-The empirical evaluation considers:
-
-\[
-\alpha\in
-\{95\%,97.5\%,99\%\}.
-\]
-
----
-
-## Rolling Training Window
-
-The primary rolling estimation window is:
-
-\[
-1250
-\]
-
-observations.
-
----
-
-## Benchmark Models
-
-The benchmark set includes:
-
-- Historical Simulation (HS)
-- Exponentially Weighted Moving Average (EWMA)
-- GARCH-t
-- EVT / Peaks-over-Threshold where applicable
-
-Corresponding VaR and ES forecasts are evaluated.
-
----
-
-# 11. Statistical Evaluation
-
-The empirical framework evaluates multiple dimensions of performance.
-
-## 11.1 VaR Calibration
-
-VaR forecasts are evaluated using:
-
-- Kupiec unconditional coverage test
-- Christoffersen independence test
-- Conditional coverage testing
-- Quantile loss
-
----
-
-## 11.2 VaR–ES Joint Evaluation
-
-VaR and ES are evaluated jointly using strictly consistent scoring methods based on the Fissler-Ziegel framework.
-
----
-
-## 11.3 Episode Probability
-
-The CTER occurrence component is evaluated using:
-
-- Brier score
-- ROC/AUC
-- episode-probability calibration
-
----
-
-## 11.4 Episode Severity
-
-Episode severity forecasts are evaluated using:
-
-- MAE
-- RMSE
-
----
-
-## 11.5 Incremental Information
-
-The research compares:
-
-### Baseline
-
-\[
-VaR/ES
-\]
-
-against
-
-### Extended specification
-
-\[
-VaR/ES + CTER.
-\]
-
-The objective is to determine whether adding the CTER information provides incremental forecasting value.
-
----
-
-## 11.6 Statistical Inference
-
-The analysis includes:
-
-- paired out-of-sample loss comparisons,
-- Diebold-Mariano-type comparisons where appropriate,
-- block bootstrap confidence intervals,
-- multiple-testing considerations.
-
-No OOS tuning is performed after observing the final empirical results.
-
----
-
-# 12. Monte Carlo Experiments
-
-Monte Carlo experiments investigate whether temporal dependence affects episode risk differently from marginal tail measures.
-
-The simulations include Gaussian and Student-t dependence structures with correlations:
-
-\[
-\rho\in
-\{0.0,0.3,0.7,0.9\}.
-\]
-
-The simulation evaluates:
-
-- VaR,
-- ES,
-- TER.
-
-A central result is that increasing temporal dependence can materially change TER while marginal VaR and ES remain comparatively stable.
-
-### Gaussian Simulation
+## Gaussian Dependence
 
 | Correlation | VaR 95% | ES 95% | TER 95% | TER 99% |
 |---:|---:|---:|---:|---:|
@@ -688,7 +614,7 @@ A central result is that increasing temporal dependence can materially change TE
 | 0.7 | 1.641 | 2.054 | 1.101 | 2.752 |
 | 0.9 | 1.655 | 2.079 | 1.167 | 4.617 |
 
-### Student-t Simulation
+## Student-t Dependence
 
 | Correlation | VaR 95% | ES 95% | TER 95% | TER 99% |
 |---:|---:|---:|---:|---:|
@@ -697,26 +623,25 @@ A central result is that increasing temporal dependence can materially change TE
 | 0.7 | 2.020 | 2.909 | 2.291 | 6.566 |
 | 0.9 | 1.990 | 2.855 | 1.929 | 9.010 |
 
-These results provide a controlled demonstration of the distinction between marginal tail severity and temporal episode structure.
+### Simulation Interpretation
+
+The simulations illustrate that stronger temporal dependence can materially change episode risk while marginal VaR and ES remain comparatively stable.
+
+This provides controlled evidence for the distinction between:
+
+```text
+Marginal Tail Risk
+        vs.
+Path-Dependent Episode Risk
+```
 
 ---
 
-# 13. Adversarial Stress Tests
+# Adversarial Stress Tests
 
-The framework is also evaluated under several stylized stress scenarios.
+The framework is also evaluated under stylized stress scenarios.
 
-The experiments include:
-
-1. Sudden crash
-2. Slow deterioration
-3. Volatility explosion
-4. Tail thickening
-5. Liquidity collapse
-6. Cross-asset contagion
-
-Illustrative results:
-
-| Scenario | VaR 95% | ES 95% | TER |
+| Stress Scenario | VaR 95% | ES 95% | TER |
 |---|---:|---:|---:|
 | Sudden crash | 3.385 | 5.500 | 3.855 |
 | Slow deterioration | 2.755 | 2.800 | 4.485 |
@@ -725,25 +650,130 @@ Illustrative results:
 | Liquidity collapse | 3.365 | 3.500 | 9.040 |
 | Cross-asset contagion | 2.755 | 2.800 | 2.765 |
 
-These stress tests illustrate that different forms of stress can affect marginal tail severity and episode persistence differently.
+These scenarios illustrate that different stress mechanisms can affect:
 
-The cross-asset contagion experiment should not be interpreted as a full multivariate CTER model. The current TER implementation is fundamentally univariate, with multivariate extensions identified as future research.
+- marginal loss severity;
+- persistence;
+- clustering;
+- cumulative episode burden.
+
+### Important Scope
+
+The current TER implementation is primarily **univariate**.
+
+The cross-asset contagion experiment should therefore be interpreted as a stress-test illustration rather than a complete multivariate CTER model.
 
 ---
 
-# 14. Empirical Results
+# Empirical Study
 
-The empirical results are intentionally reported without selecting only favorable outcomes.
+## Assets
 
-The current evidence suggests that CTER can provide useful information about the structure and severity of extreme-loss episodes, but the incremental forecasting results are **mixed**.
+The empirical study covers:
+
+- S&P 500
+- Nasdaq
+- TLT
+- EUR/USD
+- USD/JPY
+- Bitcoin
+
+## Out-of-Sample Period
+
+**2020–2025**
+
+## Forecast Horizon
+
+**10 trading days**
+
+## Rolling Training Window
+
+**1,250 observations**
+
+## Tail Levels
+
+The primary analysis considers:
+
+- 95%
+- 97.5%
+- 99%
+
+## Benchmark Models
+
+The benchmark set includes:
+
+- Historical Simulation
+- EWMA
+- GARCH-t
+- EVT / Peaks-over-Threshold where applicable
 
 ---
 
-## 14.1 Episode Forecasting
+# Backtesting Framework
 
-Across assets, episode severity forecasting is generally more promising than episode-occurrence classification.
+The empirical framework evaluates several dimensions of performance.
 
-For example, the final multi-asset evaluation produced the following results:
+## VaR Evaluation
+
+- Kupiec unconditional coverage
+- Christoffersen independence
+- Conditional coverage
+- Quantile loss
+
+## VaR / ES Evaluation
+
+VaR and ES are evaluated jointly using strictly consistent scoring methods based on the Fissler-Ziegel framework.
+
+## CTER Evaluation
+
+### Episode Probability
+
+- Brier score
+- ROC/AUC
+- calibration
+
+### Episode Severity
+
+- MAE
+- RMSE
+
+## Incremental Forecast Evaluation
+
+The research compares:
+
+```text
+BASELINE
+VaR / ES
+```
+
+with:
+
+```text
+EXTENDED
+VaR / ES + CTER
+```
+
+The purpose is to determine whether CTER contributes additional predictive information.
+
+---
+
+# Empirical Findings
+
+The current results are intentionally reported without selectively retaining only favorable findings.
+
+The evidence indicates that CTER captures a distinct path-dependent dimension of extreme-loss behavior.
+
+However:
+
+> **The current empirical results do not establish universal incremental forecasting superiority over conventional VaR/ES frameworks.**
+
+This distinction is central to the research.
+
+---
+
+# Episode Forecasting Results
+
+Selected multi-asset results are shown below.
 
 | Asset | Tail | MAE | RMSE | Brier | AUC |
 |---|---:|---:|---:|---:|---:|
@@ -759,13 +789,24 @@ For example, the final multi-asset evaluation produced the following results:
 | Bitcoin | 95% | 0.03671 | 0.04838 | 0.200 | 0.632 |
 | Bitcoin | 99% | 0.00709 | 0.02453 | 0.049 | 0.578 |
 
-These results should not be interpreted as universal early-warning evidence.
+### Interpretation
+
+The current experiments suggest that **episode-severity forecasting is generally more promising than episode-occurrence classification**.
+
+However, performance varies across:
+
+- assets;
+- tail levels;
+- market conditions;
+- forecast specifications.
+
+The results should therefore not be interpreted as evidence of universal early-warning capability.
 
 ---
 
-# 15. VaR / ES Benchmark Results
+# VaR / ES Benchmark Results
 
-The current benchmark evaluation produced the following average FZ0 scores:
+Average FZ0 scores from the current benchmark experiment:
 
 | Tail Level | Historical Simulation | EWMA | EVT |
 |---:|---:|---:|---:|
@@ -777,88 +818,75 @@ Lower values are preferred under the scoring convention used.
 
 In the current benchmark experiment, EWMA produced the strongest average score among the evaluated benchmark specifications.
 
-This repository does **not** interpret that result as evidence that CTER is inferior, because CTER forecasts a different target from the VaR/ES joint functional and therefore should not be directly ranked using the same scoring target.
+### Important
+
+This result is **not** used to rank CTER against VaR/ES because CTER forecasts a different statistical target.
 
 ---
 
-# 16. Incremental Information Test
+# Incremental Information
 
-A key empirical question is whether adding CTER to an existing risk forecast improves the prediction of future losses.
+One of the most important empirical questions is:
 
-The final statistical inference does **not** provide statistically significant aggregate evidence of universal incremental improvement.
+> **Does adding CTER to a conventional risk forecast improve predictive performance?**
 
-Equal-weight aggregate comparisons produced:
+The current aggregate statistical inference does not establish statistically significant universal improvement.
 
-### 95%
+## 95% Tail
 
 Mean MAE difference:
 
-\[
+$$
 +0.0003196
-\]
+$$
 
-with bootstrap confidence interval approximately:
+Bootstrap confidence interval:
 
-\[
-[0.000056,\;0.000754].
-\]
+$$
+[0.000056,\;0.000754]
+$$
 
-### 97.5%
+## 97.5% Tail
 
 Mean MAE difference:
 
-\[
+$$
 +0.0000742
-\]
+$$
 
-with confidence interval approximately:
+Bootstrap confidence interval:
 
-\[
-[-0.000011,\;0.000159].
-\]
+$$
+[-0.000011,\;0.000159]
+$$
 
-### 99%
+## 99% Tail
 
 Mean MAE difference:
 
-\[
+$$
 -0.0000346
-\]
+$$
 
-with confidence interval approximately:
+Bootstrap confidence interval:
 
-\[
-[-0.0000877,\;0.0000057].
-\]
+$$
+[-0.0000877,\;0.0000057]
+$$
 
-The aggregate evidence therefore does not establish statistically significant incremental forecasting improvement.
+### Interpretation
 
-This is an important result and is retained in the repository rather than excluded.
+The aggregate evidence does **not** establish statistically significant incremental forecasting improvement.
 
----
+The appropriate conclusion is:
 
-# 17. Asset-Level Results
-
-The asset-level results are heterogeneous.
-
-For example:
-
-- Bitcoin at the 95% level showed a statistically detectable deterioration in the extended loss forecast in the current comparison.
-- EUR/USD at the 95% level also showed a statistically detectable deterioration.
-- Several other asset/tail combinations showed small and statistically insignificant differences.
-- Some deeper-tail specifications showed small improvements, but these were generally not statistically significant.
-
-The appropriate conclusion is therefore:
-
-> **The current evidence supports CTER as a distinct path-dependent risk functional, but does not establish universal incremental forecasting superiority over existing risk forecasts.**
+> **CTER is a distinct path-dependent risk functional, but its incremental predictive value is asset-, horizon-, tail-, and estimator-dependent.**
 
 ---
 
-# 18. Estimator-Layer Sensitivity
+# Estimator Sensitivity
 
-A separate sensitivity analysis examined simple fixed combinations of baseline forecasts and CTER.
-
-Current average results:
+A sensitivity analysis examined fixed combinations of baseline forecasts and CTER.
 
 | Specification | MAE | RMSE |
 |---|---:|---:|
@@ -866,30 +894,28 @@ Current average results:
 | 50% Baseline + 50% CTER | 0.004030 | 0.007057 |
 | 25% Baseline + 75% CTER | 0.004071 | 0.007139 |
 
-These results are estimator sensitivity proxies rather than a fully optimized combination model.
+These are **estimator sensitivity proxies**.
 
-The repository therefore does not treat these combinations as a final production estimator.
+They are not treated as evidence of an optimized production combination model.
 
 ---
 
-# 19. EVT / GPD Estimator Experiment
+# EVT/GPD Estimation Experiment
 
-A genuine rolling Peaks-over-Threshold / Generalized Pareto Distribution experiment was also conducted.
+A rolling Peaks-over-Threshold / Generalized Pareto Distribution experiment was also conducted.
 
-The experiment used:
+The implementation used:
 
-- historical episode frequency,
-- rolling positive episode severities,
-- a threshold based on the 75th percentile of positive episode severities,
-- GPD fitting to exceedances,
-- \(\beta=95\%\),
+- historical episode frequency;
+- rolling positive episode severities;
+- a threshold based on the 75th percentile of positive episode severities;
+- GPD fitting to exceedances;
+- `β = 95%`;
 - empirical fallback under problematic shape estimates.
 
-The current implementation produced higher MAE than the benchmark specifications in the tested configuration.
+Selected results:
 
-Illustrative results:
-
-| Asset | Tail | GPD MAE | Baseline MAE | Current CTER MAE |
+| Asset | Tail | GPD MAE | Baseline MAE | CTER MAE |
 |---|---:|---:|---:|---:|
 | Bitcoin | 95% | 0.07837 | 0.00710 | 0.00720 |
 | EUR/USD | 95% | 0.00685 | 0.00064 | 0.00064 |
@@ -897,304 +923,327 @@ Illustrative results:
 
 Overall:
 
-\[
-MAE_{GPD}\approx0.038806
-\]
+```text
+GPD MAE       ≈ 0.038806
+Baseline MAE  ≈ 0.003797
+CTER MAE      ≈ 0.003836
+```
 
-versus approximately:
+### Interpretation
 
-\[
-MAE_{baseline}\approx0.003797.
-\]
+This is treated as an **estimator-specific negative result**.
 
-This is **not** interpreted as evidence that EVT/GPD methods generally perform poorly.
+It should not be interpreted as evidence that EVT/GPD methods generally perform poorly.
 
-The experiment has an important limitation:
-
-> The current GPD implementation does not use the full covariate-conditioned feature matrix because the historical feature matrix required for a complete conditional GPD implementation was not retained in the relevant forecast file.
-
-Accordingly, this result is treated as a negative estimator-specific finding rather than a rejection of EVT methods.
+A key limitation is that this implementation was not a complete covariate-conditioned GPD model because the historical feature matrix required for such a specification was not retained in the relevant forecast file.
 
 ---
 
-# 20. Why the Mixed Results Matter
+# What the Empirical Results Mean
 
-The empirical results provide an important methodological distinction.
+The current evidence supports three important conclusions.
 
-A new risk functional can be:
+### 1. Episode structure is measurable
 
-- mathematically distinct,
-- economically interpretable,
-- sensitive to temporal clustering,
-- useful for describing extreme-loss episodes,
+Extreme losses can be organized differently through time even when marginal tail characteristics are similar.
 
-without necessarily producing lower predictive loss than an established forecasting model in every dataset.
+### 2. CTER provides a distinct risk dimension
 
-The current results therefore support a more precise interpretation:
+CTER explicitly represents:
 
-> **CTER provides a framework for measuring and modeling path-dependent extreme-loss episodes. Whether that information improves a specific production forecasting system depends on the asset, tail level, estimator, forecast horizon, and information set.**
+- episode occurrence;
+- cumulative episode severity;
+- temporal clustering.
 
-This is a central principle of the research.
+### 3. Forecasting superiority is not universal
+
+The current empirical results do not demonstrate that adding CTER always improves VaR/ES forecasting.
+
+This is an important research finding rather than a result to be hidden.
 
 ---
 
-# 21. Relation to Existing Risk Measures
+# Relationship to Existing Literature
 
-CTER should be understood relative to several established families of risk measures.
+The framework is related to several established research areas.
 
 ## Value-at-Risk
 
 VaR is a marginal quantile of the loss distribution.
 
-CTER additionally considers temporal organization across a forecast horizon.
-
----
-
 ## Expected Shortfall
 
-ES summarizes average loss severity beyond a VaR threshold.
+ES measures expected severity beyond a specified tail threshold.
 
-CTER instead focuses on the upper-tail severity of the worst cumulative threshold-exceedance episode.
+## Extreme Value Theory
 
----
+EVT provides statistical methods for modeling rare and extreme observations.
 
-## Drawdown Measures
+## Clustered Exceedances
 
-Drawdown-based measures evaluate losses relative to previous wealth peaks.
-
-CTER evaluates cumulative threshold exceedances in the loss process.
-
----
+Extreme-value research has established methods for studying dependent and clustered exceedances.
 
 ## Aggregate Excess Measures
 
-Aggregate excess approaches sum extreme-event exceedances.
+Aggregate excess approaches study cumulative severity associated with extreme events.
 
-CTER incorporates cumulative exceedance into a specific financial path-dependent episode framework and applies an upper-tail functional to the worst episode.
+## Drawdown Risk
 
----
+Drawdown measures focus on losses relative to previous wealth peaks.
 
-## Extreme-Value Theory
+## CTER
 
-EVT provides theoretical tools for modeling rare and extreme observations.
+The present framework uses:
 
-CTER can incorporate EVT-based estimation but is not itself limited to one particular EVT estimator.
+> **cumulative threshold exceedance within the worst contiguous extreme-loss episode over a forecast horizon.**
 
----
-
-# 22. Model-Risk and Governance Considerations
-
-A risk measure intended for financial applications must be evaluated not only for mathematical properties but also for model risk.
-
-Important considerations include:
-
-### Threshold selection
-
-Results depend on the threshold \(q_{t,\alpha}\).
-
-### Forecast horizon
-
-Episode behavior can change substantially with \(H\).
-
-### Tail probability
-
-The choice of \(\beta\) affects the severity functional.
-
-### Dependence modeling
-
-Incorrect dependence assumptions can materially affect episode risk.
-
-### Parameter instability
-
-Extreme-event estimates can be unstable in small samples.
-
-### Regime changes
-
-Relationships learned in one market regime may not persist in another.
-
-### Data quality
-
-Extreme observations can be particularly sensitive to stale prices, market closures, liquidity effects, and data errors.
-
-### Backtesting
-
-A production CTER system should be subject to continuous out-of-sample monitoring.
+The state variable and economic interpretation therefore differ from conventional drawdown measures.
 
 ---
 
-# 23. Limitations
+# Novelty Position
 
-The current research has several limitations.
+The research does **not** claim that:
 
-## 23.1 Univariate Core
+- cumulative exceedances are new;
+- clustered extremes are new;
+- path-dependent risk measures are new;
+- EVT is new;
+- conditional tail risk is new.
 
-The current TER formulation is fundamentally univariate.
+These are established areas of research.
 
-A full multivariate formulation is required to model:
+The potential contribution instead lies in the **specific financial-risk formulation and integration** of these concepts.
 
-- cross-asset contagion,
-- portfolio-level episodes,
-- systemic risk,
-- dependence across risk factors.
+The proposed framework combines:
 
----
+1. threshold exceedance identification;
+2. contiguous episode construction;
+3. cumulative episode severity;
+4. worst-episode selection;
+5. upper-tail modeling of worst-episode severity;
+6. conditional episode probability;
+7. conditional upper-tail episode severity.
 
-## 23.2 Threshold Dependence
+The current literature search did not identify an existing financial risk measure using the exact names:
 
-The measure depends on the selected tail threshold.
-
-Different threshold estimation procedures may produce different episode structures.
-
----
-
-## 23.3 Forecast Horizon
-
-Episode risk is inherently horizon-dependent.
-
-A measure calibrated for ten trading days cannot automatically be interpreted as equivalent to a one-day or thirty-day measure.
-
----
-
-## 23.4 Rare-Event Sample Size
-
-Deep-tail estimation at 99% and beyond can suffer from limited observations.
-
----
-
-## 23.5 Conditional Model Specification
-
-CTER performance depends on the quality of the models used to estimate:
-
-\[
-P(E_{t,H}=1|X_t)
-\]
+**Tail Episode Risk (TER)**
 
 and
 
-\[
-ES_\beta(B_t|B_t>0,X_t,Z_t).
-\]
+**Conditional Tail Episode Risk (CTER)**
+
+with the same proposed formulation.
+
+Accordingly, the research positions CTER as:
+
+> **A specific path-dependent financial-risk formulation built from established concepts in extreme-value theory, clustered exceedances, aggregate excess severity, drawdown risk, and conditional tail-risk modeling.**
 
 ---
 
-## 23.6 Estimation Layer
+# Model Risk and Governance
 
-The current research does not establish one universally optimal estimator for CTER.
+Any financial risk measure intended for practical use must address model risk.
 
-Different model classes—including:
+Important considerations include:
 
-- GARCH,
-- EVT,
-- quantile regression,
-- gradient boosting,
-- neural networks,
-- transformers,
-- state-space models,
+## Threshold Selection
 
-may produce different results.
+Results depend on the selected threshold:
+
+$$
+q_{t,\alpha}
+$$
+
+## Forecast Horizon
+
+Episode risk depends on:
+
+$$
+H
+$$
+
+A 10-day episode-risk measure is not automatically equivalent to a 1-day or 30-day measure.
+
+## Tail Probability
+
+The selected:
+
+$$
+\beta
+$$
+
+affects the severity distribution.
+
+## Dependence Modeling
+
+Incorrect dependence assumptions can materially affect episode risk.
+
+## Parameter Instability
+
+Extreme-event estimates can be unstable in small samples.
+
+## Regime Changes
+
+Relationships learned from historical data may not remain stable across market regimes.
+
+## Data Quality
+
+Extreme observations are particularly sensitive to:
+
+- stale prices;
+- market closures;
+- liquidity effects;
+- bad ticks;
+- data revisions;
+- market microstructure effects.
+
+## Validation
+
+A production CTER system would require:
+
+- independent validation;
+- backtesting;
+- stress testing;
+- sensitivity analysis;
+- model governance;
+- monitoring;
+- documentation.
 
 ---
 
-## 23.7 No Universal Superiority Claim
+# Limitations
 
-The empirical evidence does not support a claim that CTER universally improves VaR/ES forecasting.
+The current research has several limitations.
 
-The framework should instead be evaluated as an additional risk dimension.
+## 1. Univariate Core
+
+The current TER implementation is primarily univariate.
+
+A full multivariate formulation is needed for:
+
+- portfolio-level episode risk;
+- cross-asset contagion;
+- systemic risk;
+- multi-factor risk.
+
+## 2. Threshold Dependence
+
+Results depend on threshold selection.
+
+## 3. Horizon Dependence
+
+Episode risk depends on the forecast horizon.
+
+## 4. Rare-Event Sample Size
+
+Deep-tail analysis can suffer from limited observations.
+
+## 5. Conditional Model Dependence
+
+CTER depends on the models used to estimate:
+
+$$
+P(E_{t,H}=1|X_t)
+$$
+
+and
+
+$$
+ES_\beta(S^*_{t,H}|E_{t,H}=1,X_t,Z_t)
+$$
+
+## 6. Estimator Dependence
+
+Different statistical and machine-learning estimators may produce different results.
+
+## 7. Regime Instability
+
+Historical relationships may not persist under structural market changes.
+
+## 8. No Universal Superiority Claim
+
+The current research does not establish that CTER universally improves conventional VaR/ES forecasting.
 
 ---
 
-# 24. Future Research
+# Future Research
 
-Several extensions are planned.
+The framework provides several directions for future research.
 
-## 24.1 Multivariate CTER
+## Multivariate CTER
 
-Develop a portfolio-level CTER formulation capable of modeling cross-asset extreme-loss episodes.
+Develop a portfolio-level formulation capable of modeling cross-asset extreme-loss episodes.
 
----
-
-## 24.2 Dynamic Thresholds
+## Dynamic Thresholds
 
 Investigate state-dependent and volatility-adjusted thresholds.
 
----
+## Conditional EVT
 
-## 24.3 Conditional EVT
+Develop a fully covariate-conditioned GPD/EVT estimator for episode severity.
 
-Develop a fully covariate-conditioned GPD / EVT estimator for episode severity.
-
----
-
-## 24.4 Machine Learning
+## Machine Learning
 
 Evaluate:
 
 - XGBoost
 - LightGBM
 - Random Forest
-- temporal neural networks
 - LSTM
 - Temporal Convolutional Networks
 - Transformers
 
 for:
 
-1. episode probability,
-2. episode severity,
-3. joint CTER estimation.
+- episode probability;
+- episode severity;
+- joint CTER estimation.
 
----
+## Regime-Switching CTER
 
-## 24.5 Regime-Switching CTER
+Incorporate market states such as:
 
-Incorporate market regimes such as:
-
-- low volatility,
-- normal volatility,
-- crisis,
-- liquidity stress,
+- low volatility;
+- normal conditions;
+- crisis;
+- liquidity stress;
 - monetary-policy transitions.
 
----
+## Portfolio Applications
 
-## 24.6 Portfolio Applications
+Extend the framework to:
 
-Extend CTER to:
-
-- multi-asset portfolios,
-- hedge funds,
-- banks,
-- market-making books,
-- derivatives portfolios,
+- multi-asset portfolios;
+- hedge funds;
+- bank trading books;
+- market-making portfolios;
+- derivatives portfolios;
 - systematic trading strategies.
 
----
+## High-Frequency Applications
 
-## 24.7 Regulatory Risk Applications
+Investigate CTER using intraday data for:
 
-Investigate whether episode-based risk information can complement existing:
+- liquidity shocks;
+- order-book deterioration;
+- volatility clustering;
+- market microstructure stress;
+- extreme intraday episodes.
 
-- market-risk capital,
-- stress testing,
-- liquidity risk,
-- counterparty risk,
-- risk appetite frameworks.
+## Regulatory Risk Applications
 
----
+Investigate whether episode-based information can complement:
 
-## 24.8 Intraday and High-Frequency Applications
-
-A natural extension is to investigate whether episode persistence at intraday frequencies provides information about:
-
-- liquidity shocks,
-- market microstructure stress,
-- order-book deterioration,
-- volatility clustering,
-- flash-crash-type episodes.
+- market-risk capital;
+- stress testing;
+- liquidity-risk frameworks;
+- risk appetite frameworks;
+- model-risk governance.
 
 ---
 
-# 25. Repository Structure
+# Repository Structure
 
 ```text
 cter-paper1/
@@ -1206,7 +1255,6 @@ cter-paper1/
 ├── .gitignore
 │
 ├── configs/
-│   ├── README.md
 │   └── experiment_manifest.json
 │
 ├── data/
@@ -1249,3 +1297,427 @@ cter-paper1/
 │   └── visualization/
 │
 └── tests/
+```
+
+---
+
+# Repository Components
+
+| Directory | Purpose |
+|---|---|
+| `configs/` | Experiment configurations and manifests |
+| `data/` | Raw, intermediate, and processed datasets |
+| `docs/` | Reproducibility and data documentation |
+| `experiments/` | Simulation, empirical, and robustness experiments |
+| `notebooks/` | Exploratory and research notebooks |
+| `paper/` | Manuscript, sections, tables, and figures |
+| `results/` | Generated research results |
+| `src/` | Core research implementation |
+| `tests/` | Validation and testing |
+
+---
+
+# Reproducibility
+
+The project follows a reproducible research workflow.
+
+## Principles
+
+### 1. Preserve Original Experiments
+
+Research outputs should not be silently overwritten after observing results.
+
+### 2. Separate Exploration from Final Evaluation
+
+Exploratory experiments are distinguished from the frozen empirical protocol.
+
+### 3. Preserve Negative Findings
+
+Experiments that do not improve forecasting performance are retained where relevant.
+
+### 4. Avoid Post-OOS Tuning
+
+The final out-of-sample period is not repeatedly optimized after observing results.
+
+### 5. Document Assumptions
+
+Thresholds, horizons, rolling windows, estimators, and metrics are explicitly documented.
+
+### 6. Track Experiments
+
+Experiment configurations and outputs are mapped to the research results.
+
+---
+
+# Data
+
+The empirical study uses financial-market data covering:
+
+- S&P 500;
+- Nasdaq;
+- TLT;
+- EUR/USD;
+- USD/JPY;
+- Bitcoin.
+
+Stress indicators include:
+
+- VIX;
+- NFCI;
+- STLFSI.
+
+Additional regime information is used in the empirical research where applicable.
+
+## Data Policy
+
+Raw third-party market data may not be redistributed through the public repository where licensing restrictions apply.
+
+The repository therefore separates:
+
+```text
+Raw Data
+   ↓
+Data Documentation
+   ↓
+Processing
+   ↓
+Research Outputs
+```
+
+See:
+
+```text
+docs/data_sources.md
+```
+
+for data-source and reproducibility documentation.
+
+---
+
+# Reproducing the Research
+
+Clone the repository:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/cter-paper1.git
+cd cter-paper1
+```
+
+Create a virtual environment.
+
+### Windows
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### macOS / Linux
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then follow:
+
+```text
+docs/reproducibility.md
+```
+
+for the complete experiment sequence.
+
+---
+
+# Recommended Reproduction Sequence
+
+```text
+1. Data preparation
+        ↓
+2. Baseline VaR / ES estimation
+        ↓
+3. TER construction
+        ↓
+4. CTER estimation
+        ↓
+5. Monte Carlo experiments
+        ↓
+6. Adversarial stress tests
+        ↓
+7. Rolling OOS forecasts
+        ↓
+8. Calibration tests
+        ↓
+9. Incremental forecast comparison
+        ↓
+10. Statistical inference
+        ↓
+11. Tables and figures
+        ↓
+12. Manuscript results
+```
+
+---
+
+# Research Workflow
+
+```text
+                 ┌──────────────────┐
+                 │   MARKET DATA    │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ DATA PROCESSING  │
+                 └────────┬─────────┘
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+              ▼                       ▼
+      ┌───────────────┐       ┌───────────────┐
+      │ VaR / ES      │       │ TER / CTER    │
+      │ Benchmarks    │       │ Framework     │
+      └───────┬───────┘       └───────┬───────┘
+              │                       │
+              └───────────┬───────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ OUT-OF-SAMPLE    │
+                 │ FORECASTING      │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ BACKTESTING      │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ STATISTICAL      │
+                 │ INFERENCE        │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ RESEARCH RESULTS │
+                 └──────────────────┘
+```
+
+---
+
+# Why This Repository Matters
+
+The repository is intended to serve three purposes.
+
+## Academic Research
+
+Provide a transparent implementation of a path-dependent tail-risk framework for further theoretical and empirical investigation.
+
+## Quantitative Finance
+
+Provide a framework that researchers can test against:
+
+- VaR;
+- ES;
+- EVT;
+- volatility models;
+- machine-learning models;
+- alternative path-dependent measures.
+
+## Financial Risk Management
+
+Provide a foundation for exploring whether episode-based risk information can complement:
+
+- market-risk models;
+- stress-testing frameworks;
+- liquidity-risk analysis;
+- model-risk systems.
+
+---
+
+# Research Integrity
+
+This repository intentionally preserves both positive and negative findings.
+
+The project does **not**:
+
+- selectively remove unfavorable experiments;
+- claim universal superiority over VaR or ES;
+- describe exploratory results as confirmatory evidence;
+- tune models using future out-of-sample information;
+- present CTER as a replacement for established regulatory risk measures.
+
+The objective is to provide a research framework that can be:
+
+- replicated;
+- criticized;
+- independently validated;
+- extended;
+- applied to new datasets.
+
+---
+
+# Research Status
+
+| Component | Status |
+|---|:---:|
+| TER formulation | ✅ Complete |
+| CTER formulation | ✅ Complete |
+| Theoretical analysis | ✅ Complete |
+| Monte Carlo experiments | ✅ Complete |
+| Adversarial stress tests | ✅ Complete |
+| Multi-asset empirical evaluation | ✅ Complete |
+| VaR/ES benchmarks | ✅ Complete |
+| Incremental testing | ✅ Complete |
+| Statistical inference | ✅ Complete |
+| Estimator sensitivity | ✅ Complete |
+| EVT/GPD experiment | ✅ Complete |
+| Reproducibility structure | ✅ Complete |
+| Multivariate CTER | 🔬 Future Research |
+| ML-based CTER | 🔬 Future Research |
+| Intraday CTER | 🔬 Future Research |
+| Production implementation | 🔬 Future Research |
+
+### Current Stage
+
+**Working Paper — September 2026**
+
+The mathematical framework and primary experiments have been developed. Additional extensions—including multivariate, machine-learning, and high-frequency formulations—remain areas for future research.
+
+---
+
+# Citation
+
+If you use the methodology, conceptual framework, code, or research results, please cite:
+
+```bibtex
+@article{neupane2026cter,
+  author  = {Neupane, Niraj},
+  title   = {Conditional Tail Episode Risk: A Path-Dependent Framework for Extreme-Loss Episodes Beyond Value-at-Risk and Expected Shortfall},
+  year    = {2026},
+  month   = {September},
+  note    = {Working Paper}
+}
+```
+
+---
+
+# Disclaimer
+
+This repository is provided for academic and research purposes.
+
+Nothing in this repository constitutes:
+
+- investment advice;
+- financial advice;
+- trading advice;
+- risk-management advice;
+- regulatory advice;
+- or a recommendation to deploy CTER in a live financial institution.
+
+Historical and simulated results do not guarantee future performance.
+
+A production implementation would require appropriate:
+
+- model validation;
+- governance;
+- stress testing;
+- backtesting;
+- monitoring;
+- documentation;
+- regulatory review.
+
+---
+
+# License
+
+The software and code components of this repository are released under the **MIT License**, unless otherwise specified.
+
+See [`LICENSE`](LICENSE).
+
+Third-party market data, external research materials, and other copyrighted materials may be subject to separate licensing restrictions.
+
+---
+
+# Author
+
+## Niraj Neupane
+
+**Chartered Accountant (ICAI)**  
+**Financial Economics · Quantitative Finance · Financial Risk · AI/ML**
+
+### Research Interests
+
+- Quantitative Finance
+- Financial Econometrics
+- Extreme Value Theory
+- Market Risk
+- Derivatives
+- Quantitative Trading
+- Machine Learning for Finance
+- Financial Engineering
+- Model Risk
+- Market Microstructure
+- Risk Management
+
+---
+
+# The Core Idea
+
+Traditional tail-risk measures primarily ask:
+
+> **How large can an individual extreme loss become?**
+
+TER asks:
+
+> **How severe can the worst cumulative extreme-loss episode become?**
+
+CTER goes one step further:
+
+> **How likely is the episode, and how severe could it become if it occurs?**
+
+In simplified form:
+
+```text
+                         TAIL RISK
+                            │
+          ┌─────────────────┼─────────────────┐
+          │                 │                 │
+          ▼                 ▼                 ▼
+         VaR                ES               CTER
+          │                 │                 │
+          ▼                 ▼                 ▼
+   Tail threshold     Tail severity     Episode risk
+                                            │
+                                    ┌───────┴───────┐
+                                    │               │
+                                    ▼               ▼
+                              Probability       Severity
+                                    │               │
+                                    └───────┬───────┘
+                                            ▼
+                                           CTER
+```
+
+---
+
+## CTER
+
+### Conditional Tail Episode Risk
+
+**A path-dependent framework for measuring and forecasting extreme-loss episodes beyond Value-at-Risk and Expected Shortfall.**
+
+---
+
+<p align="center">
+
+**Research • Quantitative Finance • Tail Risk • Financial Econometrics • Risk Management**
+
+</p>
