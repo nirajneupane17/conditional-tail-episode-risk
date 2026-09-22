@@ -1,0 +1,818 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{siunitx}
+\usepackage[authoryear,round]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{authblk}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\newtheorem{proposition}{Proposition}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\VaR}{\mathrm{VaR}}
+\newcommand{\ES}{\mathrm{ES}}
+\newcommand{\TER}{\mathrm{TER}}
+\newcommand{\CTER}{\mathrm{CTER}}
+\newcommand{\ind}{\mathbf{1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\title{\bfseries Conditional Tail Episode Risk:\\ A Path-Dependent Framework for Extreme-Loss Episodes\\ Beyond Value-at-Risk and Expected Shortfall}
+\author{Niraj Neupane, CA (ICAI)}
+\affil{\normalsize Quantitative Researcher, Korvane \quad$\cdot$\quad Financial Economist, Calderyn Institute\\
+\normalsize ORCID: 0009-0003-7026-7026 \quad$\cdot$\quad \texttt{nirajneupane17@gmail.com}}
+\date{Working Paper --- This version: September 21, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Value-at-Risk (VaR) and Expected Shortfall (ES) are central tools for financial risk
+measurement, but both primarily characterize the \emph{marginal} distribution of losses. Consequently
+they can assign similar risk to two loss paths that contain the same individual tail observations but
+differ in the temporal organization of those observations. This paper develops \textbf{Tail Episode Risk
+(TER)}, a path-dependent tail-risk functional that quantifies the severity of the most extreme
+\emph{contiguous} cumulative-loss episode within a forecast horizon, and \textbf{Conditional Tail Episode
+Risk (CTER)}, which decomposes future episode risk into (i) the conditional probability that an
+extreme-loss episode occurs and (ii) the conditional upper-tail severity of that episode. The framework is
+related to aggregate excess severity in extreme-value theory, clustered extremes, Conditional Expected
+Drawdown, and dynamic VaR/ES forecasting, but targets a distinct state variable: cumulative loss above a
+tail threshold within a contiguous episode.
+
+We establish basic properties of TER---monotonicity, positive homogeneity, translation invariance
+under a translation-equivariant threshold rule (in the sense of a severity/deviation functional rather than
+a monetary risk measure), and sensitivity to temporal clustering---and give constructed
+counterexamples in which two paths share identical marginal VaR and ES but differ in TER. Monte Carlo
+experiments confirm that TER increases sharply with serial dependence while marginal VaR and ES remain
+essentially flat, and adversarial stress tests show that TER responds to sustained episodes rather than to
+isolated tail observations.
+
+Empirically, we evaluate the framework on daily data for six equity, bond, foreign-exchange, and
+cryptocurrency markets over 2000--2026, with asset-specific out-of-sample windows (from 2005 for equities
+and FX, 2008 for Treasuries, and 2018 for Bitcoin). The evidence is \emph{cautionary}. Under
+a strictly consistent Fissler--Ziegel scoring rule, GARCH-$t$ is the strongest conventional benchmark and
+an EWMA specification a strong simple one. Episode-\emph{occurrence} discrimination is weak and decays into
+the tail (mean AUC $0.56$, $0.54$, $0.47$ at the $95\%$, $97.5\%$, $99\%$ thresholds). A formal incremental
+test finds that augmenting a parsimonious volatility baseline with the full CTER conditioning set does
+\emph{not} improve out-of-sample episode-severity forecasts---indeed it is significantly worse at the
+$95\%$ and $97.5\%$ thresholds and statistically indistinguishable at $99\%$. The evidence therefore
+supports a narrower conclusion: TER is a distinct path-dependent tail-risk \emph{functional} that captures
+the temporal organization of extreme losses, while the \emph{forecasting} value of its conditional
+extension (CTER) remains unresolved.
+
+\medskip
+\noindent\textbf{Keywords:} Tail risk; Value-at-Risk; Expected Shortfall; extreme-value theory; clustered
+extremes; path-dependent risk; financial risk measurement; Conditional Tail Episode Risk; volatility
+clustering.
+
+\noindent\textbf{JEL Classification:} C22; C53; G17; G32.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Financial risk measurement traditionally focuses on the marginal distribution of portfolio or asset
+losses. The two most widely used measures are Value-at-Risk and Expected Shortfall: VaR identifies a loss
+quantile at a specified confidence level, while ES measures the expected loss beyond that quantile. Their
+importance reflects both their statistical interpretation and their role in risk management, capital
+allocation, and regulation.
+
+Financial losses, however, are not independent draws from an unchanging marginal distribution. Extreme
+losses cluster, volatility varies over time, and market stress generates \emph{sequences} of losses rather
+than isolated observations. Consequently, two future loss paths can share an identical marginal
+distribution---and therefore identical VaR and ES---while exhibiting very different temporal structure.
+Consider
+\[
+A=(4,0,4,0,4,0), \qquad B=(4,4,4,0,0,0),
+\]
+with a tail threshold $q=2$. Both contain three losses of magnitude four and three zeros, so their marginal
+distributions, and hence any marginal VaR or ES, coincide. Yet the losses in $A$ occur as three isolated
+exceedances, whereas those in $B$ form one contiguous extreme episode. This distinction motivates the
+central question:
+
+\begin{quote}
+\emph{Can financial tail risk be characterized by the temporal organization and cumulative severity of
+extreme-loss episodes, rather than only by the marginal magnitude of individual tail observations?}
+\end{quote}
+
+To investigate it we introduce \textbf{Tail Episode Risk (TER)}. The idea is deliberately related to
+established extreme-value theory: aggregate excess severity---the sum of exceedances over a high
+threshold---has been studied for decades, and \citet{anderson1994} explicitly proposed aggregate excess as
+a measure of extreme-event severity, emphasizing that severity depends not only on peak magnitude but also
+on duration and temporal shape. The contribution here is therefore \emph{not} the invention of threshold
+exceedances or aggregate excess. Rather, we formulate a financial risk functional around the upper tail of
+the \emph{maximum cumulative threshold-exceedance episode} over a forecast horizon:
+\[
+\TER_{\alpha,\beta,H}
+= Q_{\beta}\!\left( \max_{j\in\mathcal E_{H}} \sum_{k\in j}(L_k-q_\alpha)_+ \right),
+\]
+where $L_k$ is future loss, $q_\alpha$ a tail threshold, $\mathcal E_H$ the set of contiguous
+threshold-exceedance episodes over horizon $H$, and $Q_\beta$ an upper-tail quantile of the resulting
+episode-severity distribution. We then introduce \textbf{Conditional Tail Episode Risk (CTER)},
+\[
+\CTER_{\alpha,\beta,H,t}
+= \Prob\!\left(O_{t,H}=1 \mid X_t\right)\,
+  \ES_\beta\!\left[ S^{*}_{t,H} \mid O_{t,H}=1, X_t, Z_t \right],
+\]
+which separates two questions: how likely is the market to \emph{enter} an extreme-loss episode, and,
+conditional on entering, how severe could the episode become?
+
+We pose two distinct research questions.
+\begin{description}
+\item[RQ1.] Does TER capture temporal information about extreme losses that marginal VaR and ES do not?
+\item[RQ2.] Does conditional forecasting of TER through CTER provide incremental predictive information
+beyond conventional tail-risk models?
+\end{description}
+The distinction is central: a risk functional can encode information absent from VaR/ES without
+necessarily producing superior forecasts in a finite real-world sample.
+
+\paragraph{Contributions.} \emph{First}, we formulate TER as a path-dependent tail-risk functional based
+on maximum cumulative threshold-exceedance severity. \emph{Second}, we introduce CTER as a conditional
+probability--severity decomposition of episode risk. \emph{Third}, we provide theoretical and
+simulation-based evidence that TER reacts to temporal clustering even when marginal tail behavior is held
+approximately fixed. \emph{Fourth}, we provide an empirical evaluation on 2000--2026 data that reports both
+positive and negative results and, in particular, does \emph{not} find that CTER universally improves
+conventional VaR/ES-style forecasting.
+
+\paragraph{Road map.} Section~\ref{sec:lit} reviews related risk measures. Section~\ref{sec:ter} defines
+TER and Section~\ref{sec:cter} defines CTER. Section~\ref{sec:theory} establishes theoretical properties.
+Section~\ref{sec:mc} presents the Monte Carlo study and Section~\ref{sec:stress} the adversarial stress
+tests. Section~\ref{sec:design} describes the empirical design and the fully specified estimation pipeline.
+Section~\ref{sec:bench} reports conventional VaR/ES benchmark results; Section~\ref{sec:cterresults}
+reports CTER out-of-sample results; and Section~\ref{sec:incremental} reports the incremental-information
+test. Section~\ref{sec:interpret} interprets the gap between measure innovation and forecasting
+performance, Section~\ref{sec:relation} positions TER among existing measures, Section~\ref{sec:econ}
+discusses economic and governance implications, Section~\ref{sec:limits} states limitations,
+Section~\ref{sec:future} outlines future research, and Section~\ref{sec:conclusion} concludes.
+
+\section{Related Literature}\label{sec:lit}
+
+\paragraph{Value-at-Risk and Expected Shortfall.} For a loss $L$, $\VaR_\alpha(L)=Q_\alpha(L)$ and
+$\ES_\alpha(L)=\E[L\mid L\ge \VaR_\alpha(L)]$ under a continuous distribution. VaR provides a threshold but
+not the average magnitude beyond it; ES addresses this by averaging the tail. Modern forecast evaluation
+requires care: \citet{fzg2016} and \citet{fz2016} established the joint elicitability of VaR and ES,
+providing a foundation for consistent joint scoring and comparative backtesting
+\citep{noldeziegel2017,pzc2019}. We evaluate conventional VaR/ES forecasts with a strictly consistent
+Fissler--Ziegel scoring function (Section~\ref{sec:bench}); CTER forecasts a different statistical object
+and is evaluated separately.
+
+\paragraph{Aggregate excess and extreme-value theory.} Instead of the single maximum, an extreme event can
+be characterized by the total amount by which observations exceed a threshold. \citet{anderson1994}
+proposed the aggregate excess measure $S=\sum_{j=1}^{N}\zeta_j$, where $\zeta_j$ is an excess over a high
+threshold, and emphasized that severity depends on duration and temporal shape. This literature establishes
+a clear prior-art boundary: the sum of threshold exceedances is \emph{not} claimed here as an original
+primitive. The proposed distinction is the financial functional $\max_j\sum_{k\in j}(L_k-q_\alpha)_+$
+followed by a second tail operation over the resulting distribution.
+
+\paragraph{Drawdown-based risk.} Maximum drawdown is another path-dependent concept; Conditional Expected
+Drawdown (CED) formalizes the tail of maximum drawdown and is positively homogeneous, convex, and sensitive
+to serial correlation \citep{goldbergmahmoud2017}. CED and TER are both path-dependent but have different
+state variables:
+\[
+\mathrm{MDD}=\max_{u<v}(W_u-W_v)
+\qquad\text{versus}\qquad
+S^{*}_{t,H}=\max_{j}\sum_{k\in\mathcal K_{t,H,j}}(L_{t+k}-q_{t,\alpha})_+ ,
+\]
+where $W$ denotes wealth. TER depends on threshold exceedances; CED depends on peak-to-trough wealth
+deterioration. TER is therefore not a drawdown measure in disguise.
+
+\paragraph{Dynamic extreme-value models.} A large literature develops dynamic EVT models for financial risk
+forecasting. \citet{candiaherrera2024} review dynamic threshold-exceedance models and find that
+marked-point-process and time-series approaches can perform strongly, while no single specification
+dominates. Recent work continues to develop conditional extreme-value models with time-varying scale and
+tail parameters \citep{lihouzhang2026} and dynamic tail-risk networks and mixed-frequency frameworks
+\citep{zhangyanshen2026,wang2026jof}. These models improve estimation and forecasting of conventional tail
+measures; CTER instead targets future extreme-episode occurrence and severity.
+
+\section{Tail Episode Risk}\label{sec:ter}
+
+\subsection{Loss path and exceedances}
+Let the future loss path over horizon $H$ be $\mathbf L_{t,H}=(L_{t+1},\dots,L_{t+H})$ and let $q_{t,\alpha}$
+denote a tail threshold. Define the (non-negative) exceedance and the exceedance indicator
+\[
+y_{t+k}=(L_{t+k}-q_{t,\alpha})_+,\qquad I_{t+k}=\ind\{L_{t+k}>q_{t,\alpha}\}.
+\]
+A \emph{tail episode} is a maximal contiguous run of indices with $I_{t+k}=1$; let $\mathcal E_{t,H}$ denote
+the set of such episodes.\footnote{We write the exceedance \emph{value} as $y_{t+k}$ and reserve
+$O_{t,H}$ (Section~\ref{sec:cter}) for the episode-\emph{occurrence} event, avoiding the symbol reuse that
+would otherwise conflate a magnitude with an event.}
+
+\subsection{Episode severity and TER}
+For episode $j\in\mathcal E_{t,H}$, let $\mathcal K_{t,H,j}\subseteq\{1,\dots,H\}$ be its (contiguous) index
+set and define its cumulative excess severity
+\[
+S_{t,H,j}=\sum_{k\in\mathcal K_{t,H,j}}(L_{t+k}-q_{t,\alpha})_+ ,
+\]
+and the worst-episode severity over the horizon
+\[
+S^{*}_{t,H}=\max_{j\in\mathcal E_{t,H}} S_{t,H,j}
+\qquad(\text{with }S^{*}_{t,H}=0\text{ if no exceedance occurs}).
+\]
+The maximum operation focuses the measure on the single most severe contiguous episode. Tail Episode Risk
+is the upper-tail quantile of this worst-episode severity, conditional on information $\mathcal F_t$:
+\[
+\boxed{\;\TER_{\alpha,\beta,H,t}=Q_\beta\!\left(S^{*}_{t,H}\mid\mathcal F_t\right)\;}
+\]
+where $\alpha$ sets the threshold for an extreme observation, $\beta$ the tail level applied to the
+distribution of maximum episode severity, and $\mathcal F_t$ the information set at date $t$. The two
+probability levels have distinct roles and need not be equal.
+
+\section{Conditional Tail Episode Risk}\label{sec:cter}
+
+\subsection{Episode probability}
+Define the episode-occurrence event
+\[
+O_{t,H}=\ind\!\left\{\max_{1\le k\le H}L_{t+k}>q_{t,\alpha}\right\},
+\qquad p_t=\Prob(O_{t,H}=1\mid X_t),
+\]
+where $X_t$ collects observable state information (lagged returns, realized volatility, volatility
+acceleration, drawdown, cross-asset returns, and financial-stress indicators; see
+Section~\ref{sec:design}).
+
+\subsection{Conditional episode severity}
+Let $Z_t$ contain episode-state information (recent exceedance frequency, current run length, recent
+episode severity). Define the conditional upper-tail severity
+\[
+m_t=\ES_\beta\!\left[S^{*}_{t,H}\mid O_{t,H}=1, X_t, Z_t\right].
+\]
+
+\subsection{Definition of CTER}
+\[
+\boxed{\;\CTER_{\alpha,\beta,H,t}=p_t\,m_t
+=\Prob(O_{t,H}=1\mid X_t)\,\ES_\beta\!\left[S^{*}_{t,H}\mid O_{t,H}=1,X_t,Z_t\right].\;}
+\]
+CTER thus factors episode risk into an \emph{episode probability} and a \emph{conditional episode
+severity}. This is economically different from forecasting another VaR or ES: it explicitly separates the
+likelihood of entering a stressed state from its potential severity.
+
+\section{Theoretical Properties}\label{sec:theory}
+
+\begin{proposition}[Monotonicity]
+If $L'_k\ge L_k$ for all $k$ under a common threshold $q$, then $(L'_k-q)_+\ge(L_k-q)_+$, so no episode's
+cumulative excess can decrease and $S^{*}(\mathbf L')\ge S^{*}(\mathbf L)$. Hence
+$\TER(\mathbf L')\ge \TER(\mathbf L)$.
+\end{proposition}
+
+\begin{proposition}[Positive homogeneity under consistent scaling]
+For $c>0$, if $L'_k=cL_k$ and $q'=cq$ then $(L'_k-q')_+=c(L_k-q)_+$, so $S^{*\prime}=cS^{*}$ and
+$\TER(cL)=c\,\TER(L)$.
+\end{proposition}
+
+\begin{proposition}[Translation invariance under a translation-equivariant threshold rule]
+If $L'_k=L_k+c$ and the threshold rule is translation-equivariant, $q'=q+c$, then $L'_k-q'=L_k-q$, so
+$S^{*\prime}=S^{*}$ and $\TER'=\TER$.
+\end{proposition}
+\noindent A clarification is warranted, because VaR and ES are translation \emph{equivariant}
+($\rho(L+c)=\rho(L)+c$) as monetary risk measures. TER is not a monetary risk measure but a severity
+aggregate, and the natural analogue is a \emph{deviation} functional, which satisfies translation
+\emph{invariance} ($D(L+c)=D(L)$). Proposition~3 is exactly this: when the threshold shifts with the losses,
+the exceedances---and hence $S^{*}$---are unchanged, so TER is invariant, not equivariant. TER neither
+satisfies nor targets the monetary equivariance property; it measures the magnitude of a
+threshold-exceedance episode rather than a capital requirement. The qualifications also matter for
+homogeneity: both properties hold \emph{conditional} on the threshold being scaled or shifted jointly with
+the losses, and because $q_{t,\alpha}$ is in practice estimated dynamically, they are properties of the
+joint (loss, threshold) rule rather than unconditional axioms.
+
+\begin{proposition}[Temporal-clustering sensitivity]
+For $A=(4,0,4,0,4,0)$ and $B=(4,4,4,0,0,0)$ with $q=2$, the three exceedances in $A$ are separate
+singletons, giving $S^{*}(A)=2$, whereas in $B$ they form one contiguous episode, giving $S^{*}(B)=6$.
+Since the two paths are marginal permutations of one another, $\VaR(A)=\VaR(B)$ and $\ES(A)=\ES(B)$, yet
+$S^{*}(A)\ne S^{*}(B)$ and therefore $\TER(A)\ne\TER(B)$.
+\end{proposition}
+\noindent This is the central conceptual distinction; Figure~\ref{fig:ab} illustrates it. (On a single path
+$S^{*}$ is a scalar; $\TER=Q_\beta(S^{*})$ becomes a genuine quantile once $S^{*}$ is viewed as a random
+variable over the horizon distribution.)
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\textwidth]{figs/ab.pdf}
+\caption{Two loss paths with identical marginals (three losses of $4$, three of $0$) and hence identical VaR
+and ES, but different worst-episode severity $S^{*}$ at threshold $q=2$.}
+\label{fig:ab}
+\end{figure}
+
+\paragraph{Coherence.} We do \emph{not} claim that TER satisfies the full coherence axioms. Subadditivity
+in particular requires separate analysis because the threshold is distribution-dependent and because
+episode formation can change under portfolio aggregation. TER should therefore be treated as a
+path-dependent tail-risk \emph{functional}, not automatically as a coherent risk measure.
+
+\section{Monte Carlo Simulation}\label{sec:mc}
+
+\paragraph{Objective.} We test whether TER is sensitive to temporal dependence when the marginal
+innovation distribution is held approximately fixed. We simulate stationary AR(1) processes
+$x_t=\rho x_{t-1}+\sqrt{1-\rho^2}\,\varepsilon_t$, so the marginal variance is invariant to $\rho$, and
+compute VaR/ES on the marginal together with $Q_\beta(S^{*})$ over rolling $H=10$ windows
+($20{,}000$ windows per configuration; threshold $\alpha=95\%$). VaR and ES are computed from the stationary
+marginal distribution implied by the standardized AR(1) process, whereas TER is computed from the rolling
+horizon paths; this isolates the dependence channel, since the marginal is held fixed by construction while
+only $\rho$ varies.
+
+\begin{table}[t]
+\centering
+\caption{Gaussian AR(1) dependence experiment ($\varepsilon\sim N(0,1)$, standardized).}
+\label{tab:mc-normal}
+\begin{tabular}{rrrrr}
+\toprule
+$\rho$ & VaR $95\%$ & ES $95\%$ & TER $95\%$ & TER $99\%$ \\
+\midrule
+0.0 & 1.633 & 2.059 & 0.981 & 1.508 \\
+0.3 & 1.645 & 2.053 & 1.010 & 1.737 \\
+0.7 & 1.655 & 2.046 & 1.065 & 2.580 \\
+0.9 & 1.668 & 2.093 & 1.060 & 4.541 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Student-$t$ AR(1) dependence experiment ($\varepsilon\sim t_5$, standardized to unit variance).}
+\label{tab:mc-t}
+\begin{tabular}{rrrrr}
+\toprule
+$\rho$ & VaR $95\%$ & ES $95\%$ & TER $95\%$ & TER $99\%$ \\
+\midrule
+0.0 & 1.560 & 2.233 & 1.494 & 3.130 \\
+0.3 & 1.562 & 2.199 & 1.530 & 2.979 \\
+0.7 & 1.579 & 2.134 & 1.482 & 4.141 \\
+0.9 & 1.622 & 2.106 & 1.304 & 5.281 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tables~\ref{tab:mc-normal}--\ref{tab:mc-t} and Figure~\ref{fig:mc} report the result. In the Gaussian case,
+$95\%$ VaR and ES are essentially flat in $\rho$ (near the standard-normal values $1.645$ and $2.063$),
+while $\TER_{99}$ rises from $\approx 1.5$ to $\approx 4.5$. The Student-$t$ case, with innovations
+standardized to unit variance so that the marginal is held fixed, shows the same qualitative pattern
+($\TER_{99}$ rising from $3.1$ to $5.3$).\footnote{Standardizing the $t$ innovations is important: an
+\emph{un}-standardized $t_5$ has variance $5/3$, which by itself inflates all tail measures and confounds
+the dependence channel. With standardization, the residual rise in $\TER_{99}$ is attributable to
+clustering.} We summarize:
+\[
+\boxed{\text{Temporal dependence can materially raise episode risk without proportionally raising marginal
+VaR/ES.}}
+\]
+This demonstrates that TER measures an \emph{additional} dimension of path information; it does not by
+itself demonstrate a superior forecast.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\textwidth]{figs/mc.pdf}
+\caption{Gaussian AR(1) experiment. As serial dependence $\rho$ increases, VaR and ES are flat while TER
+(especially at the $99\%$ level) rises sharply.}
+\label{fig:mc}
+\end{figure}
+
+\section{Adversarial Stress Tests}\label{sec:stress}
+
+To probe behavior directly, we construct six $60$-day loss paths under a \emph{common, fixed} threshold
+$q=2.5$ (in standardized loss units), so that differences in the measures reflect temporal organization
+rather than a path-specific threshold. Table~\ref{tab:stress} reports $95\%$ VaR, $95\%$ ES, and the
+worst-episode severity $S^{*}$.
+
+\begin{table}[t]
+\centering
+\caption{Adversarial stress tests (fixed threshold $q=2.5$). $S^{*}$ is the worst contiguous
+episode severity.}
+\label{tab:stress}
+\begin{tabular}{lrrr}
+\toprule
+Scenario & VaR $95\%$ & ES $95\%$ & $S^{*}$ \\
+\midrule
+Isolated crash                       & 1.42 & 4.00 & 6.50 \\
+Tail thickening (separated spikes)   & 6.00 & 6.00 & 3.50 \\
+Liquidity collapse (sustained run)   & 3.50 & 3.50 & 12.00 \\
+Volatility explosion (cluster)       & 6.42 & 7.68 & 25.62 \\
+Broad contagion (all elevated)       & 3.39 & 4.01 & 2.40 \\
+Escalating deterioration             & 3.58 & 4.52 & 7.80 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The decisive comparison is tail thickening versus liquidity collapse. Tail thickening has the
+\emph{highest} VaR and ES ($6.00$, $6.00$) because it contains several large \emph{isolated} observations,
+yet its worst episode is small ($S^{*}=3.5$). The liquidity collapse has \emph{lower} VaR and ES ($3.50$)
+but the sustained run yields a much larger $S^{*}=12.0$. Under these constructed paths, VaR and ES assign
+larger marginal-tail severity to tail thickening, whereas TER assigns larger episode severity to the
+sustained liquidity-collapse path; the measures therefore distinguish different dimensions of stress rather
+than producing a common risk ordering. The cross-asset (``broad contagion'') scenario also exposes a
+limitation: the present TER is univariate and a
+complete contagion measure would require an explicit multivariate extension.
+
+\section{Empirical Design}\label{sec:design}
+
+\subsection{Data}
+We use daily log returns for six assets spanning 2000--2026: the S\&P~500 and Nasdaq indices, the iShares
+20+ Year Treasury Bond ETF (TLT), EUR/USD, USD/JPY, and Bitcoin. Data availability differs by asset: the
+equity indices and the two currency pairs begin in 2000, TLT in July 2002, and Bitcoin in September 2014.
+State variables are the VIX index (daily), the Chicago Fed National Financial Conditions Index (NFCI), and
+the St.\ Louis Fed Financial Stress Index (STLFSI); the two Fed indices are weekly and are carried forward
+to daily frequency by last-observation-carried-forward (LOCF), so that only information available up to
+date~$t$ enters $X_t$. The three stress series are used from their per-series source files rather than from
+a merged file, so that the weekly indices are never treated as daily observations.
+
+\paragraph{Calendar convention.} Because the paper studies temporal clustering, the observation calendar is
+stated explicitly. For the exchange-traded assets, observations follow the relevant market calendar; Bitcoin
+trades continuously and is observed on a calendar-day basis. The horizon is therefore defined in
+\emph{observations} rather than calendar time: a 10-day observation horizon is ten trading days for the
+exchange-traded assets and ten calendar days for Bitcoin. All quantities ($q_{t,\alpha}$, episodes,
+$S^{*}_{t,H}$) are defined on each asset's own observation index.
+
+\paragraph{Windows and horizon.} The rolling estimation window is $W=1{,}250$ observations, the forecast
+horizon is $H=10$ observations, and the threshold levels are $\alpha\in\{95\%,97.5\%,99\%\}$. Because the
+threshold window and a $252$-observation training burn-in consume the first $1{,}502$ observations,
+out-of-sample forecasting begins at an \emph{asset-specific} date: December~2005 for the S\&P~500, Nasdaq,
+EUR/USD, and USD/JPY; July~2008 for TLT; and October~2018 for Bitcoin (reflecting its later inception and
+continuous calendar). The out-of-sample counts are $4{,}827$ (equity indices), $4{,}802$ (currencies),
+$4{,}183$ (TLT), and $2{,}496$ (Bitcoin).
+
+\subsection{Threshold and realized targets}
+At each date $t$, $q_{t,\alpha}$ is the trailing-window empirical $\alpha$-quantile of losses $L=-r$. Over
+the next $H$ days we compute the exceedances, form contiguous episodes, and record the realized worst-episode
+severity $S^{*}_{t,H}$ and occurrence $O_{t,H}=\ind\{S^{*}_{t,H}>0\}$.
+
+\subsection{Conditioning information ($X_t,Z_t$)}
+All features use information available through date $t$. The state vector $X_t$ contains: today's loss;
+trailing $5$- and $10$-day cumulative losses; $20$- and $60$-day realized volatility; volatility
+acceleration ($\mathrm{rv}_{20}/\mathrm{rv}_{60}$); $60$-day drawdown; the VIX level and its $5$-day change;
+NFCI; STLFSI; and the S\&P~500 trailing $5$-day loss as a systemic proxy. The episode-state vector $Z_t$
+adds: the trailing $60$-day exceedance frequency relative to $q_{t,\alpha}$, the current in-episode run
+length, and the recent within-window episode severity. The full specification is given in
+Appendix~\ref{app:repro}.
+
+\subsection{Estimators and evaluation}
+The framework is deliberately estimator-agnostic; we fix one transparent specification. Episode occurrence
+$p_t$ is estimated with a gradient-boosted classifier and episode severity with a gradient-boosted
+regressor (histogram GBMs; $200$ trees, depth $3$, learning rate $0.06$, $\ell_2$ regularization $1.0$).
+Models are fit by expanding-window walk-forward with annual\,($378$-day) refits and a purge gap of $H$ days
+between the last training label and the first test date, eliminating look-ahead from the horizon-$H$
+targets. Occurrence is evaluated by Brier score and AUC; severity by MAE and RMSE against realized
+$S^{*}_{t,H}$; conventional VaR/ES benchmarks by a strictly consistent Fissler--Ziegel score
+(Section~\ref{sec:bench}). This avoids scoring different statistical targets with a single function.
+
+\section{Conventional VaR/ES Benchmark Results}\label{sec:bench}
+
+We evaluate four one-day-ahead VaR/ES forecasters---Historical Simulation, an EWMA (RiskMetrics,
+$\lambda=0.94$) Gaussian model, a peaks-over-threshold EVT/GPD model, and a GARCH(1,1)-$t$ model---using the
+$0$-homogeneous Fissler--Ziegel loss \citep{fz2016,pzc2019}. For returns $r$, forecast VaR $v$ and ES $e$
+(both negative in the lower tail) at tail probability $\alpha$,
+\begin{equation}
+\mathrm{FZ0}(r,v,e)= -\frac{1}{\alpha e}\,\ind\{r\le v\}\,(v-r)\;+\;\frac{v}{e}\;+\;\ln(-e)\;-\;1,
+\label{eq:fz0}
+\end{equation}
+which is strictly consistent for the (VaR, ES) pair; lower average scores are better. Table~\ref{tab:fz}
+reports the mean score across the six assets and the associated breach rates.
+
+\begin{table}[t]
+\centering
+\caption{Mean FZ0 score across assets (lower is better) and mean breach rate. Best model per level in bold.}
+\label{tab:fz}
+\begin{tabular}{lrrrr}
+\toprule
+& Hist.\ Sim. & EWMA-Normal & EVT-POT & GARCH-$t$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Mean FZ0 score}}\\
+\quad $95\%$   & $-3.627$ & $-3.768$ & $-3.618$ & $\mathbf{-3.789}$ \\
+\quad $97.5\%$ & $-3.395$ & $-3.535$ & $-3.383$ & $\mathbf{-3.590}$ \\
+\quad $99\%$   & $-3.127$ & $-3.177$ & $-3.092$ & $\mathbf{-3.350}$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Mean breach rate} (target $=1-\alpha$)}\\
+\quad $95\%$   & 0.0500 & 0.0548 & 0.0497 & 0.0531 \\
+\quad $97.5\%$ & 0.0259 & 0.0339 & 0.0258 & 0.0290 \\
+\quad $99\%$   & 0.0122 & 0.0199 & 0.0115 & 0.0124 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+GARCH-$t$ attains the best FZ0 score at every level, with EWMA-Normal a strong second; Historical Simulation
+and EVT are best calibrated by breach rate but weaker under the joint score. Notably, the EWMA-Normal model
+over-breaches at the $99\%$ level ($1.99\%$ versus a $1\%$ target). We therefore use GARCH-$t$ (strongest
+under FZ0) and EWMA (strong and simple) as the competitive baselines against which any incremental CTER
+value must be judged---rather than a deliberately weak model that would flatter the new framework.
+
+\section{CTER Out-of-Sample Results}\label{sec:cterresults}
+
+Table~\ref{tab:cter} reports occurrence discrimination (Brier, AUC) and severity accuracy (MAE, RMSE) by
+asset and threshold. Two patterns stand out. Severity forecasts exhibit measurable cross-market
+predictability---their scale tracks each market's volatility (MAE is smallest for FX, largest for
+Bitcoin)---although, as Section~\ref{sec:incremental} shows, the full CTER conditioning set does not improve
+on a parsimonious baseline. Occurrence discrimination, by contrast, is weak and \emph{decays into the tail}:
+the cross-asset mean AUC falls from $0.56$ ($95\%$) to $0.54$ ($97.5\%$) to $0.47$ ($99\%$)---below random at
+the deepest level (Figure~\ref{fig:auc}). The bond market (TLT) is the exception, with AUC $\approx0.64$--$0.67$
+at all levels, indicating that fixed-income episodes are more predictable than equity or crypto episodes. The
+two components of the decomposition therefore behave asymmetrically: the probability component is weak, while
+the severity target carries more predictable structure. The decomposition is thus conceptually useful even
+though the current conditioning set does not reliably forecast episode occurrence, and CTER should not be
+presented as a universal early-warning system.
+
+\begin{table}[t]
+\centering
+\caption{CTER out-of-sample results by asset and threshold. ``OOS start'' is the first out-of-sample date
+for that asset (windows differ by data availability). Base rate is the realized episode frequency; AUC below
+$0.5$ indicates worse-than-random discrimination.}
+\label{tab:cter}
+\begin{tabular}{llrrrrr}
+\toprule
+Asset (OOS start) & Level & Base rate & Brier & AUC & MAE & RMSE \\
+\midrule
+S\&P 500 (Dec 2005) & $95\%$   & 0.317 & 0.249 & 0.563 & 0.00652 & 0.01436 \\
+                    & $97.5\%$ & 0.179 & 0.209 & 0.471 & 0.00489 & 0.01256 \\
+                    & $99\%$   & 0.098 & 0.130 & 0.405 & 0.00318 & 0.01012 \\
+Nasdaq (Dec 2005)   & $95\%$   & 0.328 & 0.257 & 0.563 & 0.00661 & 0.01415 \\
+                    & $97.5\%$ & 0.193 & 0.182 & 0.519 & 0.00470 & 0.01280 \\
+                    & $99\%$   & 0.102 & 0.114 & 0.423 & 0.00306 & 0.00977 \\
+TLT (Jul 2008)      & $95\%$   & 0.371 & 0.227 & 0.672 & 0.00304 & 0.00637 \\
+                    & $97.5\%$ & 0.200 & 0.162 & 0.664 & 0.00206 & 0.00570 \\
+                    & $99\%$   & 0.093 & 0.094 & 0.644 & 0.00134 & 0.00520 \\
+EUR/USD (Dec 2005)  & $95\%$   & 0.337 & 0.241 & 0.597 & 0.00196 & 0.00336 \\
+                    & $97.5\%$ & 0.186 & 0.176 & 0.601 & 0.00117 & 0.00239 \\
+                    & $99\%$   & 0.090 & 0.096 & 0.467 & 0.00055 & 0.00153 \\
+USD/JPY (Dec 2005)  & $95\%$   & 0.372 & 0.258 & 0.599 & 0.00392 & 0.00720 \\
+                    & $97.5\%$ & 0.202 & 0.186 & 0.581 & 0.00296 & 0.00591 \\
+                    & $99\%$   & 0.119 & 0.132 & 0.473 & 0.00205 & 0.00504 \\
+Bitcoin (Oct 2018)  & $95\%$   & 0.251 & 0.308 & 0.377 & 0.02858 & 0.04827 \\
+                    & $97.5\%$ & 0.130 & 0.191 & 0.427 & 0.01920 & 0.03858 \\
+                    & $99\%$   & 0.054 & 0.131 & 0.403 & 0.00937 & 0.02754 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\textwidth]{figs/auc.pdf}
+\caption{Episode-occurrence AUC by asset and threshold. Discrimination is weak overall and, except for
+bonds (TLT), falls toward or below $0.5$ at the $99\%$ threshold.}
+\label{fig:auc}
+\end{figure}
+
+As an economic reality check, Figure~\ref{fig:episodes} plots the realized $10$-day episode severity for the
+S\&P~500 over 2000--2026. The measure isolates precisely the sustained crises one would want it to flag: its
+worst distinct episodes are March~2020 (COVID, $S^{*}=11.3\%$), October--November~2008 (GFC), the
+March~2025 selloff, August~2011, and the 2002 and 2000 dot-com unwinds. This confirms that $S^{*}$ is
+economically meaningful even where its \emph{conditional} forecast is difficult.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figs/episodes.pdf}
+\caption{Realized S\&P~500 Tail Episode severity $S^{*}_{t,H}$ ($H=10$, threshold $q$ at the full-sample
+$95\%$ loss quantile, $1.85\%$). Labeled peaks are the worst distinct episodes.}
+\label{fig:episodes}
+\end{figure}
+
+\section{Incremental Information Test}\label{sec:incremental}
+
+The decisive question (RQ2) is whether CTER adds information beyond a competitive conventional model. We
+compare two forecasts of the \emph{same} target $S^{*}_{t,H}$, produced by the \emph{same} gradient-boosted
+regressor under the \emph{same} walk-forward protocol, differing only in their inputs. The \emph{baseline}
+regressor receives three EWMA-derived inputs---the EWMA volatility $\hat\sigma^{\mathrm{EWMA}}_t$ and its
+induced one-day VaR and ES, $\hat\sigma^{\mathrm{EWMA}}_t\Phi^{-1}(\alpha)$ and
+$-\hat\sigma^{\mathrm{EWMA}}_t\phi(\Phi^{-1}(\alpha))/\alpha$. The \emph{augmented} regressor receives these
+three inputs \emph{plus} the full $X_t,Z_t$ conditioning set. The map from EWMA inputs to the 10-observation
+episode-severity forecast is thus the gradient-boosted regressor itself; no closed-form scaling is imposed,
+which is why both models must share the same estimator so that the comparison isolates the incremental value
+of the conditioning information. Let
+$\Delta_t=|S^{*}_t-\hat S^{*}_{\text{aug},t}|-|S^{*}_t-\hat S^{*}_{\text{base},t}|$; negative values favor
+CTER. We aggregate equal-weight across assets and report the mean $\Delta$, a moving-block bootstrap $95\%$
+confidence interval (block length $20$), and a Diebold--Mariano $p$-value with a Newey--West HAC variance
+(lag $H-1=9$).
+
+\begin{table}[t]
+\centering
+\caption{Incremental-information test. $\Delta=$ MAE(augmented) $-$ MAE(baseline); \emph{negative} favors
+CTER. Positive, significant values indicate the conditioning set does not help.}
+\label{tab:incremental}
+\begin{tabular}{lrrr}
+\toprule
+Level & Mean $\Delta$ & $95\%$ block-bootstrap CI & DM $p$-value \\
+\midrule
+$95\%$   & $+0.001231$ & $[+0.000729,\ +0.001790]$ & $<0.001$ \\
+$97.5\%$ & $+0.000722$ & $[+0.000339,\ +0.001141]$ & $<0.001$ \\
+$99\%$   & $+0.000170$ & $[-0.000076,\ +0.000409]$ & $0.077$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The result (Table~\ref{tab:incremental} and Figure~\ref{fig:incremental}) is a clear negative. At the $95\%$
+and $97.5\%$ thresholds the augmented model is \emph{significantly worse} than the parsimonious volatility
+baseline ($\Delta>0$, $p<0.001$), and at $99\%$ the difference is statistically insignificant (the CI
+includes zero, $p=0.077$). This pattern is consistent with the additional conditioning variables introducing
+estimation variance without sufficient incremental predictive signal in this specification and sample. The
+appropriate conclusion is:
+\begin{quote}
+The 2000--2026 cross-asset sample provides \emph{no} evidence that CTER conditioning improves aggregate
+out-of-sample episode-severity forecasting over a competitive volatility baseline, and some evidence that
+it degrades it at the $95\%$ and $97.5\%$ thresholds.
+\end{quote}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.66\textwidth]{figs/incremental.pdf}
+\caption{Incremental CTER forecast performance. Points are the mean MAE difference (augmented minus
+baseline) with $95\%$ moving-block bootstrap intervals; values to the left of the dashed zero line would
+favor CTER. The augmented model is significantly worse at $95\%$ and $97.5\%$ and indistinguishable from the
+baseline at $99\%$.}
+\label{fig:incremental}
+\end{figure}
+
+\section{Why the Distinction Matters}\label{sec:interpret}
+
+The theoretical and empirical findings are not contradictory. The simulations (Section~\ref{sec:mc}) show
+that $\TER$ captures the temporal organization of extreme losses; the forecasting experiments
+(Sections~\ref{sec:cterresults}--\ref{sec:incremental}) show that CTER does not yet demonstrate incremental
+predictive value. A risk measure can encode a meaningful dimension of risk while being hard to forecast.
+The pipeline
+\[
+\text{Risk functional}\ \to\ \text{Target}\ \to\ \text{Estimator}\ \to\ \text{Forecast}\ \to\ \text{Decision}
+\]
+is supported here at the first two links and remains open at the later ones. Separating
+\emph{risk-functional innovation} from \emph{forecasting performance} is the paper's central methodological
+point.
+
+\section{Relation to Existing Risk Measures}\label{sec:relation}
+
+\begin{table}[h]
+\centering
+\caption{Primary question addressed by each measure.}
+\label{tab:relation}
+\begin{tabular}{ll}
+\toprule
+Measure & Primary question \\
+\midrule
+VaR & How large is the loss threshold? \\
+ES & How severe is the marginal tail? \\
+Aggregate excess & How much total exceedance occurs within an extreme event? \\
+CED & How large can peak-to-trough drawdown become? \\
+TER & How severe can the worst cumulative threshold-exceedance episode become? \\
+CTER & Given current conditions, how likely and how severe is that episode? \\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent TER occupies a position between marginal tail risk and fully path-dependent stress analysis.
+Table~\ref{tab:contribution} restates this positioning against the specific structural properties that
+distinguish the proposed functionals from existing measures.
+
+\begin{table}[h]
+\centering
+\caption{Contribution relative to existing measures. ``Path dependent'' indicates dependence on the ordering
+of observations; ``temporal clustering'' indicates sensitivity to whether exceedances are contiguous.}
+\label{tab:contribution}
+\begin{tabular}{lllll}
+\toprule
+Measure & Object & Path dependent? & Temporal clustering? & Status \\
+\midrule
+VaR & Quantile of loss & No & No & Existing \\
+ES & Mean tail loss & No & No & Existing \\
+Aggregate excess & Total threshold exceedance & Event-level & Yes & Related (prior art) \\
+CED & Maximum drawdown & Yes & Yes & Related \\
+TER & Max cumulative threshold-exceedance episode & Yes & Yes & \textbf{Proposed} \\
+CTER & Conditional prob.\ $\times$ tail episode severity & Yes & Yes & \textbf{Proposed} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Economic and Governance Implications}\label{sec:econ}
+
+TER is not proposed as a replacement for regulatory VaR or ES but as a complementary monitoring layer. A
+conventional system reporting, say, $\VaR=5\%$ and $\ES=7\%$ could additionally report an episode
+probability and a conditional episode severity, communicating the likelihood and potential severity of a
+\emph{sustained} extreme-loss episode. Because the framework makes the temporal structure of tail events
+explicit, a risk system could separately track episode probability, severity, duration, escalation, and
+clustering---more interpretable than a single opaque score. That additional structure, however, creates
+additional model risk: the framework depends on threshold selection, episode definition, horizon, tail
+level, probability calibration, severity estimation, and dependence assumptions, and should be subject to
+model validation rather than treated as superior because it is more complex. The empirical results here
+reinforce that caution: the conditional layer did not add forecasting value in this sample.
+
+\section{Limitations}\label{sec:limits}
+
+\emph{(i) Prior art.} The cumulative threshold-exceedance component is established in EVT
+\citep{anderson1994}; the potential contribution is the financial maximum-episode functional and its
+conditional probability--severity extension. \emph{(ii) No empirical superiority.} The incremental tests
+are, at best, insignificant and, at worst, unfavorable to CTER. \emph{(iii) Univariate formulation.}
+Cross-asset contagion requires an explicit multivariate extension. \emph{(iv) Threshold and horizon
+sensitivity.} Different $q_\alpha$ and $H$ define different objects; stability warrants systematic study.
+\emph{(v) Sparse targets.} Episode occurrence and severity are hard to forecast because extreme events are
+rare, especially at $99\%$. \emph{(vi) Estimator scope.} A fully covariate-conditioned EVT specification for
+$\ES_\beta(S^{*}\mid O,X_t,Z_t)$ remains unexplored and could differ from the gradient-boosted
+implementation used here.
+
+\section{Future Research}\label{sec:future}
+
+Natural extensions include a multivariate CTER for synchronized cross-asset episodes; a liquidity-adjusted
+variant incorporating spreads, depth, turnover, and price impact; an options-implied variant using implied
+volatility, skew, and the variance risk premium; state-dependent EVT with $\xi_t=f(X_t)$, $\sigma_t=g(X_t)$
+in a conditional GPD; richer machine-learning estimators (quantile forests, distributional networks,
+temporal transformers) with the functional held fixed while only the estimator varies; and a
+decision-theoretic evaluation asking whether CTER changes capital, position sizing, or risk limits rather
+than relying only on statistical forecast error.
+
+\section{Conclusion}\label{sec:conclusion}
+
+Financial tail risk has at least two dimensions: the \emph{magnitude} of individual tail losses and the
+\emph{temporal organization} of those losses. VaR and ES are built around the first; TER explicitly
+incorporates the second. We showed constructively and by simulation that two paths can share identical
+marginal VaR and ES while differing in TER, and that increasing serial dependence can sharply raise episode
+risk while leaving marginal measures nearly unchanged. The empirical evidence is more cautious: on
+2000--2026 data across six markets, conditional forecasting of episode risk through CTER did not improve
+on---and at moderate thresholds underperformed---a competitive volatility baseline, and episode-occurrence
+discrimination was weak in the deep tail. The evidence therefore does not justify presenting CTER as a
+replacement for VaR or ES. It supports a narrower, more precise conclusion:
+\begin{quote}
+Tail Episode Risk provides a distinct path-dependent representation of extreme-loss severity that preserves
+temporal information discarded by marginal tail measures. Conditional Tail Episode Risk provides a framework
+for incorporating current-state information into that representation, but its empirical forecasting value in
+real markets remains an open question.
+\end{quote}
+The broader implication is that risk measurement may benefit from moving beyond how large an individual tail
+loss can become toward the complementary question of how extreme losses organize themselves through time.
+
+\bigskip
+\noindent\textbf{Reproducibility.} All figures and tables are generated from daily 2000--2026 data by a
+single pipeline. The manuscript specifies the estimator, feature set, evaluation protocol, and configuration
+required to reproduce the reported analysis from the underlying data (Section~\ref{sec:design} and
+Appendix~C); the accompanying code repository contains the data-preprocessing, estimation, forecast, and
+scoring code together with fixed random seeds.
+
+\begin{thebibliography}{99}
+\small
+\bibitem[Anderson(1994)]{anderson1994} Anderson, C.\ W.\ (1994). The aggregate excess measure of severity
+of extreme events. \emph{Journal of Research of the National Institute of Standards and Technology},
+99(4), 555--561. \href{https://doi.org/10.6028/jres.099.054}{doi:10.6028/jres.099.054}.
+
+\bibitem[Candia and Herrera(2024)]{candiaherrera2024} Candia, C., \& Herrera, R.\ (2024). An empirical
+review of dynamic extreme value models for forecasting Value-at-Risk, Expected Shortfall and expectile.
+\emph{Journal of Empirical Finance}, 77, 101488.
+\href{https://doi.org/10.1016/j.jempfin.2024.101488}{doi:10.1016/j.jempfin.2024.101488}.
+
+\bibitem[Fissler et al.(2016)]{fzg2016} Fissler, T., Ziegel, J.\ F., \& Gneiting, T.\ (2016). Expected
+Shortfall is jointly elicitable with Value-at-Risk---implications for backtesting. \emph{Risk Magazine},
+58--61.
+
+\bibitem[Fissler and Ziegel(2016)]{fz2016} Fissler, T., \& Ziegel, J.\ F.\ (2016). Higher order
+elicitability and Osband's principle. \emph{Annals of Statistics}, 44(4), 1680--1707.
+
+\bibitem[Goldberg and Mahmoud(2017)]{goldbergmahmoud2017} Goldberg, L.\ R., \& Mahmoud, O.\ (2017).
+Drawdown: from practice to theory and back again. \emph{Mathematics and Financial Economics}, 11, 275--297.
+\href{https://doi.org/10.1007/s11579-016-0181-9}{doi:10.1007/s11579-016-0181-9}.
+
+\bibitem[Li et al.(2026)]{lihouzhang2026} Li, J., Hou, W., \& Zhang, Z.\ (2026). A coupled autoregressive
+extreme-value model for dynamic tail risk with risk spirals. \emph{Finance Research Letters}, 105, 110187.
+\href{https://doi.org/10.1016/j.frl.2026.110187}{doi:10.1016/j.frl.2026.110187}.
+
+\bibitem[Nolde and Ziegel(2017)]{noldeziegel2017} Nolde, N., \& Ziegel, J.\ F.\ (2017). Elicitability and
+backtesting: perspectives for banking regulation. \emph{Annals of Applied Statistics}, 11(4), 1833--1874.
+
+\bibitem[Patton et al.(2019)]{pzc2019} Patton, A.\ J., Ziegel, J.\ F., \& Chen, R.\ (2019). Dynamic
+semiparametric models for expected shortfall (and Value-at-Risk). \emph{Journal of Econometrics}, 211(2),
+388--413.
+
+\bibitem[Zhang et al.(2026a)]{zhangyanshen2026} Zhang, D., Yan, X., \& Shen, F.\ (2026). Dynamic financial
+tail risk networks: a backtesting-based conditional expected shortfall approach. \emph{PLOS ONE}, 21(6),
+e0351966. \href{https://doi.org/10.1371/journal.pone.0351966}{doi:10.1371/journal.pone.0351966}.
+
+\bibitem[Wang et al.(2026)]{wang2026jof} Wang, S., Wang, J., Lv, M., \& Zhang, D.\ (2026). Forecasting
+financial risk with minute-level transaction data and economic policy uncertainty: a new mixed-frequency
+time-varying forecasting framework. \emph{Journal of Forecasting}, 45(4), 1681--1713.
+\href{https://doi.org/10.1002/for.70101}{doi:10.1002/for.70101}.
+\end{thebibliography}
+
+\appendix
+\section{Core Definitions}\label{app:defs}
+\begin{align*}
+\text{Tail episode set:}\quad & \mathcal E_{t,H}=\{\,j:\ L_{t+k}>q_{t,\alpha}\ \text{for contiguous }k\,\}.\\
+\text{Episode severity:}\quad & S_{t,H,j}=\sum_{k\in\mathcal K_{t,H,j}}(L_{t+k}-q_{t,\alpha})_+.\\
+\text{Maximum episode severity:}\quad & S^{*}_{t,H}=\max_{j\in\mathcal E_{t,H}}S_{t,H,j}.\\
+\text{Tail Episode Risk:}\quad & \TER_{\alpha,\beta,H,t}=Q_\beta(S^{*}_{t,H}\mid\mathcal F_t).\\
+\text{Conditional TER:}\quad & \CTER_{\alpha,\beta,H,t}=\Prob(O_{t,H}=1\mid X_t)\,
+\ES_\beta[S^{*}_{t,H}\mid O_{t,H}=1,X_t,Z_t].
+\end{align*}
+
+\section{Empirical Evaluation Protocol}\label{app:protocol}
+Daily data, 2000--2026, with asset-specific out-of-sample start dates (2005 for equities and FX, 2008 for
+TLT, 2018 for Bitcoin); $W=1{,}250$-observation rolling threshold window; $H=10$-observation
+horizon; levels $95\%,97.5\%,99\%$; assets S\&P~500, Nasdaq, TLT, EUR/USD, USD/JPY, Bitcoin. Conventional
+VaR/ES models are scored with the FZ0 loss \eqref{eq:fz0}. CTER occurrence is scored by Brier and AUC and
+severity by MAE and RMSE. Incremental value compares an EWMA-only baseline with a fully conditioned model on
+the same target with paired, block-bootstrapped, HAC-adjusted tests. No post-out-of-sample tuning is used.
+
+\section{Reproducibility Details}\label{app:repro}
+\textbf{Features $X_t$:} today's loss $L_t$; trailing $5$- and $10$-day cumulative loss; $20$- and $60$-day
+realized volatility; volatility acceleration $\mathrm{rv}_{20}/\mathrm{rv}_{60}$; $60$-day drawdown; VIX
+level; VIX $5$-day change; NFCI; STLFSI; S\&P~500 trailing $5$-day loss. \textbf{Episode state $Z_t$:}
+trailing $60$-day exceedance frequency relative to $q_{t,\alpha}$; current in-episode run length; recent
+within-window episode severity. \textbf{Estimators:} histogram gradient-boosting classifier (occurrence)
+and regressor (severity), $200$ trees, max depth $3$, learning rate $0.06$, $\ell_2$ regularization $1.0$.
+\textbf{Walk-forward:} expanding window, first fit after $W+252$ observations, refit every $378$ days, purge
+gap $H$ days between last training label and first test date. \textbf{Benchmarks:} Historical Simulation;
+EWMA (RiskMetrics, $\lambda=0.94$) Gaussian; EVT peaks-over-threshold GPD (threshold at the window $90\%$
+quantile); GARCH(1,1)-$t$ refit every $126$ days with an $O(N)$ variance filter between refits.
+
+\bigskip
+\noindent\emph{Note on citation checks:} the pre-2025 references were verified against publisher records;
+the 2026 references were confirmed to exist. Before submission, verify the exact \emph{Finance Research
+Letters} volume/article number and DOI for Li et al.\ (2026) and the final volume/pages for the Journal of
+Forecasting item on the publisher page.
+
+\end{document}

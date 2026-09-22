@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Conditional Tail Episode Risk: A Path-Dependent Framework for Extreme-Loss Episodes Beyond Value-at-Risk and Expected Shortfall"
+authors:
+  - family-names: Neupane
+    given-names: Niraj
+type: article
+year: 2026
+notes: "Working Paper"
+repository-code: "https://github.com/nirajneupane17/conditional-tail-episode-risk"
+keywords:
+  - tail risk
+  - value-at-risk
+  - expected shortfall
+  - extreme value theory
+  - path-dependent risk
+  - financial econometrics
+license: MIT

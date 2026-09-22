@@ -1,0 +1,7 @@
+scenario,threshold,VaR95,ES95,S_star
+Isolated crash,2.5,1.42,4.0,6.5
+Tail thickening (separated spikes),2.5,6.0,6.0,3.5
+Liquidity collapse (sustained run),2.5,3.5,3.5,12.0
+Volatility explosion (cluster),2.5,6.42,7.68,25.62
+Broad contagion (all elevated),2.5,3.39,4.01,2.4
+Escalating deterioration,2.5,3.58,4.52,7.8

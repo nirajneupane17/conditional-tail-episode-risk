@@ -1,0 +1,9 @@
+# Tested with Python 3.10+ and the exact versions below.
+# The reported tables/figures reproduce with these pins; newer minor
+# versions will normally reproduce to the precision shown.
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+scikit-learn==1.8.0
+arch==8.0.0
+matplotlib==3.10.8
