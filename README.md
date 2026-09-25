@@ -494,3 +494,24 @@ Code is released under the **MIT License** — see [`LICENSE`](LICENSE). Third-p
 ---
 
 **Niraj Neupane** — Chartered Accountant (ICAI) · Financial Economics · Quantitative Finance · Financial Risk · AI/ML
+
+## JFEC extension analyses (scripts 07–11)
+
+Additional analyses developed for the stronger (JFEC-targeted) version of the paper.
+All are reproducible and write to `results/`; they reuse the same data, seeds, and
+walk-forward protocol as `01`–`06`.
+
+| Script | Purpose | Output |
+| --- | --- | --- |
+| `src/07_ter_scoring.py` | TER forecasts (Q_β of S\*) scored by the strictly consistent **pinball loss** + coverage backtest, augmented vs EWMA baseline | `results/ter_scoring.csv` |
+| `src/08_severity_fz.py` | Episode-severity **Fissler–Ziegel** (VaR, ES) scoring on the episode subsample | `results/severity_fz.csv` |
+| `src/09_horizon_grid.py` | Robustness across horizons H ∈ {5,10,20,60}; the H=10 row reproduces the incremental test | `results/horizon_grid.csv` |
+| `src/10_threshold_grid.py` | Robustness across thresholds α ∈ {0.90,…,0.99} at H=10 | `results/threshold_grid.csv` |
+| `src/11_conditional_gpd.py` | Conditional regression-GPD severity estimator (scale fit on the episode subsample); estimator-robustness check | `results/conditional_gpd.csv` |
+
+**Note on `11_conditional_gpd.py`:** under the strictly consistent mean FZ score the
+full conditioning set does not improve on the EWMA-scale baseline; on outlier-robust
+metrics (median, per-episode win rate) the augmented model is modestly closer on
+typical episodes but incurs occasional large deep-tail extrapolation errors. See the
+manuscript's robustness section for interpretation. Deep-tail (99%) severity results
+are data-limited.
